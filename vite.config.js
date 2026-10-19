@@ -4,9 +4,10 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: process.env.NODE_ENV === 'production' ? '/streak-pulse-mobile/' : '/',
+  base: '/',
   server: {
     host: '0.0.0.0',
     port: 3000,
+    strictPort: true
   }
 })
