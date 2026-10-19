@@ -1,0 +1,214 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Check, 
+  Trash2, 
+  Flame, 
+  Briefcase, 
+  BookOpen, 
+  Heart, 
+  Brain, 
+  Clock, 
+  Sparkles,
+  ListTodo,
+  CheckCircle2
+} from 'lucide-react';
+
+const categoryIcons = {
+  fitness: Flame,
+  work: Briefcase,
+  learning: BookOpen,
+  health: Heart,
+  mind: Brain
+};
+
+const categoryLabels = {
+  fitness: { label: 'Fitness', bg: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+  work: { label: 'Focus', bg: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+  learning: { label: 'Learning', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  health: { label: 'Health', bg: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+  mind: { label: 'Mindset', bg: 'bg-purple-500/10 text-purple-400 border-purple-500/20' }
+};
+
+export const TaskList = ({ 
+  tasks, 
+  onToggleTask, 
+  onDeleteTask, 
+  isAdminUnlocked, 
+  currentTheme,
+  dayName,
+  onOpenAdmin
+}) => {
+  const [filter, setFilter] = useState('all'); // all | active | completed
+
+  const filteredTasks = tasks.filter(task => {
+    if (filter === 'active') return !task.completed;
+    if (filter === 'completed') return task.completed;
+    return true;
+  });
+
+  return (
+    <div className="px-4 py-2">
+      {/* Header with Day name & filter pills */}
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <span>{dayName} Plan</span>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-semibold">
+              {tasks.length}
+            </span>
+          </h2>
+        </div>
+
+        {/* Filter chips */}
+        <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-xl border border-white/5 text-[10px]">
+          {['all', 'active', 'completed'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-2 py-1 rounded-lg capitalize transition-all ${
+                filter === f
+                  ? `${currentTheme.accentBg} text-slate-950 font-bold shadow-xs`
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Task List Items Container */}
+      <div className="space-y-2 pb-6">
+        <AnimatePresence mode="popLayout">
+          {filteredTasks.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="py-10 text-center rounded-2xl border border-dashed border-white/10 p-6 bg-black/20"
+            >
+              <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400">
+                <ListTodo className="w-6 h-6" />
+              </div>
+              <p className="text-xs font-semibold text-slate-300 mb-1">
+                {filter === 'completed'
+                  ? 'No completed tasks yet'
+                  : filter === 'active'
+                  ? 'All tasks checked off! 🚀'
+                  : 'No tasks scheduled for this day'}
+              </p>
+              <p className="text-[11px] text-slate-500 max-w-[200px] mx-auto mb-3">
+                {isAdminUnlocked
+                  ? 'Use the inline form below to add custom daily tasks.'
+                  : 'Unlock Admin Mode with the Sparkle icon to add tasks.'}
+              </p>
+              {!isAdminUnlocked && (
+                <button
+                  onClick={onOpenAdmin}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${currentTheme.accentBadge} hover:bg-white/10 transition-colors`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Enter PIN to Add Tasks</span>
+                </button>
+              )}
+            </motion.div>
+          ) : (
+            filteredTasks.map((task) => {
+              const IconComponent = categoryIcons[task.category] || Flame;
+              const catConfig = categoryLabels[task.category] || categoryLabels.work;
+
+              return (
+                <motion.div
+                  key={task.id}
+                  layout
+                  initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className={`group relative p-3 rounded-2xl border backdrop-blur-md transition-all duration-200 flex items-center gap-3 ${
+                    currentTheme.card
+                  } ${currentTheme.cardHover} ${
+                    task.completed ? 'opacity-70 bg-black/40' : 'shadow-md'
+                  }`}
+                >
+                  {/* Interactive Custom Checkbox */}
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => onToggleTask(task.id)}
+                    className={`relative flex-shrink-0 w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 focus:outline-none ${
+                      task.completed
+                        ? currentTheme.checkActive
+                        : 'border-slate-600 bg-black/40 hover:border-slate-400'
+                    }`}
+                  >
+                    {task.completed && (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -45 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                      >
+                        <Check className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />
+                      </motion.div>
+                    )}
+                  </motion.button>
+
+                  {/* Task Content: Title & Metas */}
+                  <div 
+                    className="flex-1 min-w-0 cursor-pointer select-none"
+                    onClick={() => onToggleTask(task.id)}
+                  >
+                    <p 
+                      className={`text-xs font-semibold leading-snug transition-all duration-200 truncate ${
+                        task.completed 
+                          ? 'line-through text-slate-500 font-normal italic' 
+                          : 'text-slate-100 hover:text-white'
+                      }`}
+                    >
+                      {task.title}
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-1">
+                      {/* Category Badge */}
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-full border ${catConfig.bg}`}>
+                        <IconComponent className="w-2.5 h-2.5" />
+                        <span>{catConfig.label}</span>
+                      </span>
+
+                      {/* Time Pill */}
+                      {task.time && (
+                        <span className="inline-flex items-center gap-1 text-[9px] text-slate-400 font-mono">
+                          <Clock className="w-2.5 h-2.5 text-slate-500" />
+                          <span>{task.time}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Inline Delete Button (Admin Only) */}
+                  {isAdminUnlocked && (
+                    <motion.button
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteTask(task.id);
+                      }}
+                      title="Delete task (Admin)"
+                      className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/20 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </motion.button>
+                  )}
+                </motion.div>
+              );
+            })
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
