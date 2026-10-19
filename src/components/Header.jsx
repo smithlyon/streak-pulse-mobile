@@ -9,23 +9,27 @@ export const Header = ({
   onLockAdmin 
 }) => {
   return (
-    <header className="sticky top-0 z-30 px-4 pt-3 pb-3 flex items-center justify-between border-b border-white/5 backdrop-blur-xl bg-black/30">
-      <div className="flex items-center gap-2.5">
-        <div 
-          className={`w-8 h-8 rounded-xl flex items-center justify-center ${currentTheme.accentBg} text-slate-950 font-black text-sm shadow-md shadow-${currentTheme.id === 'jojo' ? 'sky-500/30' : 'purple-500/30'}`}
+    <header className="sticky top-0 z-30 px-5 pt-8 pb-4 sm:pt-10 flex items-center justify-between border-b border-white/5 backdrop-blur-xl bg-black/40">
+      <div className="flex items-center gap-3">
+        {/* Playful Animated Logo Badge */}
+        <motion.div 
+          whileHover={{ rotate: [0, -12, 12, -8, 0], scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center ${currentTheme.accentBg} text-slate-950 font-black text-xl shadow-lg shadow-${currentTheme.id === 'jojo' ? 'sky-500/35' : 'purple-500/35'} cursor-pointer transition-transform`}
         >
           ⚡
-        </div>
+        </motion.div>
+
         <div>
-          <h1 className="text-sm font-bold text-white tracking-wide flex items-center gap-1.5">
-            DailyPulse
+          <h1 className="text-lg font-bold text-white tracking-wide flex items-center gap-2 font-playful">
+            <span>DailyPulse</span>
             {isAdminUnlocked && (
-              <span className="flex items-center gap-1 text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse">
-                <ShieldCheck className="w-2.5 h-2.5" /> Admin
+              <span className="flex items-center gap-1 text-[10px] uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse font-bold">
+                <ShieldCheck className="w-3 h-3" /> Admin
               </span>
             )}
           </h1>
-          <p className="text-[10px] text-slate-400">Daily Streak & Habit Tracker</p>
+          <p className="text-xs text-slate-400 font-medium">Daily Streak & Habit Tracker ✨</p>
         </div>
       </div>
 
@@ -35,20 +39,20 @@ export const Header = ({
           <button
             onClick={onLockAdmin}
             title="Lock Admin Mode"
-            className="px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all flex items-center gap-1.5 text-xs font-semibold"
+            className="px-3 py-1.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm"
           >
             <Lock className="w-3.5 h-3.5" />
             <span>Lock</span>
           </button>
         ) : (
           <motion.button
-            whileHover={{ scale: 1.1, rotate: 12 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.15, rotate: 15 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onAdminClick}
             title="Secret Admin Access (PIN: 1234)"
-            className={`p-2 rounded-xl transition-all duration-300 bg-white/5 hover:bg-white/10 border border-white/10 ${currentTheme.accentClass} hover:shadow-lg`}
+            className={`p-2.5 rounded-2xl transition-all duration-300 bg-white/5 hover:bg-white/10 border border-white/10 ${currentTheme.accentClass} hover:shadow-lg`}
           >
-            <Sparkles className="w-4 h-4 animate-pulse" />
+            <Sparkles className="w-5 h-5 animate-pulse" />
           </motion.button>
         )}
       </div>

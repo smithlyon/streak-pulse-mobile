@@ -30,12 +30,13 @@ export default {
         }
       },
       boxShadow: {
-        'phone': '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 12px #1f242d, 0 0 0 14px #333a48',
         'jojo-glow': '0 0 25px rgba(56, 189, 248, 0.3)',
         'chocks-glow': '0 0 25px rgba(192, 132, 252, 0.3)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Fredoka', 'Nunito', 'system-ui', '-apple-system', 'sans-serif'],
+        playful: ['Fredoka', 'cursive', 'sans-serif'],
+        body: ['Nunito', 'sans-serif'],
       }
     },
   },
