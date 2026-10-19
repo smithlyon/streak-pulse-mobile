@@ -9,50 +9,32 @@ export const Header = ({
   onLockAdmin 
 }) => {
   return (
-    <header className="sticky top-0 z-30 px-5 pt-12 pb-5 sm:pt-16 flex items-center justify-between border-b border-white/5 backdrop-blur-xl bg-black/40">
-      <div className="flex items-center gap-3">
-        {/* Playful Animated Logo Badge */}
-        <motion.div 
-          whileHover={{ rotate: [0, -12, 12, -8, 0], scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center ${currentTheme.accentBg} text-slate-950 font-black text-xl shadow-lg shadow-${currentTheme.id === 'jojo' ? 'sky-500/35' : 'purple-500/35'} cursor-pointer transition-transform`}
-        >
-          ⚡
-        </motion.div>
-
-        <div>
-          <h1 className="text-lg font-bold text-white tracking-wide flex items-center gap-2 font-playful">
-            <span>DailyPulse</span>
-            {isAdminUnlocked && (
-              <span className="flex items-center gap-1 text-[10px] uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse font-bold">
-                <ShieldCheck className="w-3 h-3" /> Admin
-              </span>
-            )}
-          </h1>
-          <p className="text-xs text-slate-400 font-medium">Daily Streak & Habit Tracker ✨</p>
-        </div>
-      </div>
-
-      {/* Header Actions: Sparkle PIN Admin Trigger or Lock Button */}
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 px-6 pt-16 pb-6 sm:pt-20 sm:pb-8 flex items-center justify-center border-b border-white/5 backdrop-blur-xl bg-black/30 transition-all duration-300">
+      {/* Center of the top: Star / Admin Access Button with generous breathing room */}
+      <div className="flex items-center justify-center">
         {isAdminUnlocked ? (
-          <button
-            onClick={onLockAdmin}
-            title="Lock Admin Mode"
-            className="px-3 py-1.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm"
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Lock</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-xs uppercase px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse font-bold shadow-sm">
+              <ShieldCheck className="w-3.5 h-3.5" /> Admin Active
+            </span>
+            <button
+              onClick={onLockAdmin}
+              title="Lock Admin Mode"
+              className="px-3.5 py-1.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm hover:scale-105 active:scale-95"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Lock</span>
+            </button>
+          </div>
         ) : (
           <motion.button
-            whileHover={{ scale: 1.15, rotate: 15 }}
+            whileHover={{ scale: 1.15, rotate: 12 }}
             whileTap={{ scale: 0.9 }}
             onClick={onAdminClick}
-            title="Secret Admin Access (PIN: 1234)"
-            className={`p-2.5 rounded-2xl transition-all duration-300 bg-white/5 hover:bg-white/10 border border-white/10 ${currentTheme.accentClass} hover:shadow-lg`}
+            title="Admin Access"
+            className={`p-3.5 rounded-2xl transition-all duration-300 bg-white/5 hover:bg-white/10 border border-white/10 ${currentTheme.accentClass} hover:shadow-xl flex items-center justify-center`}
           >
-            <Sparkles className="w-5 h-5 animate-pulse" />
+            <Sparkles className="w-6 h-6 animate-pulse" />
           </motion.button>
         )}
       </div>

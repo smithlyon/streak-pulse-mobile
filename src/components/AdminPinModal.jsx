@@ -142,21 +142,17 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess, currentTheme }) => {
             })}
           </motion.div>
 
-          {/* Error / Hint Message */}
+          {/* Error / Status Message */}
           <div className="h-5 text-center mb-3">
             {error ? (
               <span className="text-[11px] font-medium text-rose-400 flex items-center justify-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Incorrect PIN. Hint: 1234
+                <AlertCircle className="w-3 h-3" /> Incorrect PIN. Please try again.
               </span>
             ) : isSuccess ? (
               <span className="text-[11px] font-semibold text-emerald-400 flex items-center justify-center gap-1">
                 <Check className="w-3 h-3 stroke-[3]" /> Access Granted!
               </span>
-            ) : (
-              <span className="text-[10px] text-slate-500 font-mono">
-                Hint: PIN is <strong className="text-slate-400">1234</strong>
-              </span>
-            )}
+            ) : null}
           </div>
 
           {/* iOS-Style Number Keypad */}

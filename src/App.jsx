@@ -146,7 +146,7 @@ export default function App() {
         />
 
         {/* Theme Toggle Bar (Jojo / Chocks) */}
-        <div className="mt-1">
+        <div className="mt-4 sm:mt-5">
           <ThemeToggle 
             activeTheme={themeId} 
             onSelectTheme={(id) => setThemeId(id)} 
