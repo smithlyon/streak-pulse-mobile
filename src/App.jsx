@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MobileFrame } from './components/MobileFrame';
+import { Header } from './components/Header';
 import { ThemeToggle } from './components/ThemeToggle';
 import { StreakProgressBar } from './components/StreakProgressBar';
 import { DaySelector } from './components/DaySelector';
@@ -9,7 +9,7 @@ import { AdminPinModal } from './components/AdminPinModal';
 import { AdminControls } from './components/AdminControls';
 import { THEMES } from './constants/themeConfig';
 import { DAYS_OF_WEEK, INITIAL_TASKS } from './constants/initialData';
-import { Sparkles, ShieldCheck, Info } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 const STORAGE_KEY_TASKS = 'daily_pulse_tasks_v1';
 const STORAGE_KEY_THEME = 'daily_pulse_theme_v1';
@@ -127,37 +127,31 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-2 sm:p-4 relative">
+    <div className={`min-h-screen w-full ${currentTheme.bg} transition-colors duration-500 text-slate-100 flex flex-col items-center relative overflow-x-hidden`}>
       {/* Dynamic ambient backlight matching active theme */}
       <div 
-        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[750px] rounded-full blur-[140px] pointer-events-none transition-colors duration-700 opacity-25 ${
+        className={`fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-xl h-[450px] rounded-full blur-[140px] pointer-events-none transition-colors duration-700 opacity-20 ${
           themeId === 'jojo' ? 'bg-sky-500' : 'bg-purple-600'
         }`}
       />
 
-      {/* Outer Companion Helper Header for Desktop Viewers */}
-      <aside aria-label="Desktop guidance banner" className="w-full max-w-[420px] mb-2 px-3 flex items-center justify-between text-xs text-slate-400">
-        <div className="flex items-center gap-1.5 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Mobile Device Viewport</span>
-        </div>
-        <div className="flex items-center gap-1 text-[11px] text-slate-500 font-mono">
-          <span>PIN: <strong className="text-slate-300">1234</strong></span>
-        </div>
-      </aside>
-
-      {/* Main Smartphone Chassis Component */}
-      <MobileFrame
-        currentTheme={currentTheme}
-        onAdminClick={() => setIsPinModalOpen(true)}
-        isAdminUnlocked={isAdminUnlocked}
-        onLockAdmin={handleLockAdmin}
-      >
-        {/* Theme Toggle Bar (Jojo / Chocks) */}
-        <ThemeToggle 
-          activeTheme={themeId} 
-          onSelectTheme={(id) => setThemeId(id)} 
+      {/* Main Full-Screen Mobile App Container (Edge-to-edge on mobile, centered max-w-lg on desktop) */}
+      <div className="w-full max-w-lg min-h-screen flex flex-col relative z-10 pb-12">
+        {/* Real App Header */}
+        <Header
+          currentTheme={currentTheme}
+          onAdminClick={() => setIsPinModalOpen(true)}
+          isAdminUnlocked={isAdminUnlocked}
+          onLockAdmin={handleLockAdmin}
         />
+
+        {/* Theme Toggle Bar (Jojo / Chocks) */}
+        <div className="mt-1">
+          <ThemeToggle 
+            activeTheme={themeId} 
+            onSelectTheme={(id) => setThemeId(id)} 
+          />
+        </div>
 
         {/* Dynamic Daily Streak Progress Bar with real-time percentage */}
         <StreakProgressBar
@@ -189,16 +183,18 @@ export default function App() {
         </AnimatePresence>
 
         {/* Dynamic Task List with check-off, strikethrough, and smooth layout animations */}
-        <TaskList
-          tasks={activeDayTasks}
-          onToggleTask={handleToggleTask}
-          onDeleteTask={handleDeleteTask}
-          isAdminUnlocked={isAdminUnlocked}
-          currentTheme={currentTheme}
-          dayName={selectedDayObj.full}
-          onOpenAdmin={() => setIsPinModalOpen(true)}
-        />
-      </MobileFrame>
+        <div className="flex-1">
+          <TaskList
+            tasks={activeDayTasks}
+            onToggleTask={handleToggleTask}
+            onDeleteTask={handleDeleteTask}
+            isAdminUnlocked={isAdminUnlocked}
+            currentTheme={currentTheme}
+            dayName={selectedDayObj.full}
+            onOpenAdmin={() => setIsPinModalOpen(true)}
+          />
+        </div>
+      </div>
 
       {/* Secret Admin PIN Modal (PIN: 1234) */}
       <AdminPinModal
@@ -215,7 +211,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className={`fixed bottom-6 z-50 px-4 py-2 rounded-2xl text-xs font-semibold shadow-2xl backdrop-blur-md border border-white/20 flex items-center gap-2 ${
+            className={`fixed bottom-6 z-50 px-4 py-2.5 rounded-2xl text-xs font-semibold shadow-2xl backdrop-blur-md border border-white/20 flex items-center gap-2 ${
               themeId === 'jojo' ? 'bg-[#0f172a]/95 text-sky-200' : 'bg-[#1e0b36]/95 text-purple-200'
             }`}
           >
