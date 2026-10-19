@@ -9,7 +9,7 @@ export const Header = ({
   onLockAdmin 
 }) => {
   return (
-    <header className="sticky top-0 z-30 px-5 pt-8 pb-4 sm:pt-10 flex items-center justify-between border-b border-white/5 backdrop-blur-xl bg-black/40">
+    <header className="sticky top-0 z-30 px-5 pt-12 pb-5 sm:pt-16 flex items-center justify-between border-b border-white/5 backdrop-blur-xl bg-black/40">
       <div className="flex items-center gap-3">
         {/* Playful Animated Logo Badge */}
         <motion.div 
