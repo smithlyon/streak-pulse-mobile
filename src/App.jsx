@@ -11,8 +11,8 @@ import { THEMES } from './constants/themeConfig';
 import { DAYS_OF_WEEK, INITIAL_TASKS } from './constants/initialData';
 import { ShieldCheck } from 'lucide-react';
 
-const STORAGE_KEY_TASKS = 'daily_pulse_tasks_v1';
 const STORAGE_KEY_THEME = 'daily_pulse_theme_v1';
+const getProfileStorageKey = (profile) => `daily_pulse_tasks_${profile}_v2`;
 
 export default function App() {
   // Theme state: 'jojo' (sky blue dark) or 'chocks' (rich purple dark)
@@ -23,15 +23,35 @@ export default function App() {
   // Active day selection: 'mon' to 'sun'
   const [selectedDay, setSelectedDay] = useState('mon');
 
-  // Tasks mapped by day
-  const [tasksByDay, setTasksByDay] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_TASKS);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to load tasks from localStorage', e);
-    }
-    return INITIAL_TASKS;
+  // Independent tasks per profile: { jojo: tasksByDay, chocks: tasksByDay }
+  const [tasksByProfile, setTasksByProfile] = useState(() => {
+    const profiles = ['jojo', 'chocks'];
+    const initial = {};
+
+    profiles.forEach((p) => {
+      try {
+        const saved = localStorage.getItem(getProfileStorageKey(p));
+        if (saved) {
+          initial[p] = JSON.parse(saved);
+          return;
+        }
+      } catch (e) {
+        console.error(`Failed to load ${p} tasks`, e);
+      }
+      // Migrate legacy shared tasks to jojo if present
+      if (p === 'jojo') {
+        try {
+          const legacy = localStorage.getItem('daily_pulse_tasks_v1');
+          if (legacy) {
+            initial[p] = JSON.parse(legacy);
+            return;
+          }
+        } catch (e) {}
+      }
+      initial[p] = JSON.parse(JSON.stringify(INITIAL_TASKS));
+    });
+
+    return initial;
   });
 
   // Admin Mode state
@@ -44,51 +64,70 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY_THEME, themeId);
   }, [themeId]);
 
-  // Persist tasks
+  // Persist active profile's tasks
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasksByDay));
+      if (tasksByProfile[themeId]) {
+        localStorage.setItem(getProfileStorageKey(themeId), JSON.stringify(tasksByProfile[themeId]));
+      }
     } catch (e) {
-      console.error('Failed to save tasks to localStorage', e);
+      console.error(`Failed to save ${themeId} tasks to localStorage`, e);
     }
-  }, [tasksByDay]);
+  }, [tasksByProfile, themeId]);
 
   const currentTheme = THEMES[themeId] || THEMES.jojo;
 
-  // Active day calculations
+  // Active profile's tasks for the week
+  const tasksByDay = tasksByProfile[themeId] || INITIAL_TASKS;
+
+  // Active day calculations for active profile
   const activeDayTasks = tasksByDay[selectedDay] || [];
   const completedCount = activeDayTasks.filter((t) => t.completed).length;
   const totalCount = activeDayTasks.length;
   const selectedDayObj = DAYS_OF_WEEK.find((d) => d.id === selectedDay) || DAYS_OF_WEEK[0];
 
-  // Dynamic Streak calculation across the week (starts at 0 and increments day by day)
+  // Dynamic Streak calculation for the active profile (starts at 0 and increments day by day)
   const completedDaysCount = DAYS_OF_WEEK.filter((d) => {
     const list = tasksByDay[d.id] || [];
     return list.length > 0 && list.every((t) => t.completed);
   }).length;
   const streakDays = completedDaysCount;
 
-  // Handlers
+  // Handlers (operate strictly on active profile)
   const handleToggleTask = (taskId) => {
     if (!isAdminUnlocked) {
       showToast('Admin login required to check off tasks');
       setIsPinModalOpen(true);
       return;
     }
-    setTasksByDay((prev) => {
-      const dayTasks = prev[selectedDay] || [];
+    setTasksByProfile((prev) => {
+      const currentProfileTasks = prev[themeId] || {};
+      const dayTasks = currentProfileTasks[selectedDay] || [];
       const updated = dayTasks.map((task) =>
         task.id === taskId ? { ...task, completed: !task.completed } : task
       );
-      return { ...prev, [selectedDay]: updated };
+      return {
+        ...prev,
+        [themeId]: {
+          ...currentProfileTasks,
+          [selectedDay]: updated
+        }
+      };
     });
   };
 
   const handleDeleteTask = (taskId) => {
-    setTasksByDay((prev) => {
-      const dayTasks = prev[selectedDay] || [];
+    setTasksByProfile((prev) => {
+      const currentProfileTasks = prev[themeId] || {};
+      const dayTasks = currentProfileTasks[selectedDay] || [];
       const updated = dayTasks.filter((task) => task.id !== taskId);
-      return { ...prev, [selectedDay]: updated };
+      return {
+        ...prev,
+        [themeId]: {
+          ...currentProfileTasks,
+          [selectedDay]: updated
+        }
+      };
     });
   };
 
@@ -101,16 +140,26 @@ export default function App() {
       completed: false
     };
 
-    setTasksByDay((prev) => {
-      const dayTasks = prev[selectedDay] || [];
-      return { ...prev, [selectedDay]: [newTask, ...dayTasks] };
+    setTasksByProfile((prev) => {
+      const currentProfileTasks = prev[themeId] || {};
+      const dayTasks = currentProfileTasks[selectedDay] || [];
+      return {
+        ...prev,
+        [themeId]: {
+          ...currentProfileTasks,
+          [selectedDay]: [newTask, ...dayTasks]
+        }
+      };
     });
   };
 
   const handleResetDefaults = () => {
-    if (window.confirm('Reset all tasks for the week to default state?')) {
-      setTasksByDay(INITIAL_TASKS);
-      showToast('Weekly tasks reset to defaults');
+    if (window.confirm(`Reset ${currentTheme.name}'s tasks for the week to default state?`)) {
+      setTasksByProfile((prev) => ({
+        ...prev,
+        [themeId]: JSON.parse(JSON.stringify(INITIAL_TASKS))
+      }));
+      showToast(`${currentTheme.name}'s weekly tasks reset to defaults`);
     }
   };
 
