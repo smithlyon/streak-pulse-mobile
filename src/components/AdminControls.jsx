@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -9,41 +9,49 @@ import {
   Calendar, 
   ChevronLeft, 
   ChevronRight,
-  CalendarDays,
-  Check
+  CalendarDays
 } from 'lucide-react';
-import { CATEGORIES, DAYS_OF_WEEK } from '../constants/initialData';
+import { CATEGORIES } from '../constants/initialData';
+import { EXTENDED_MONTHS, jsDayToDayId } from '../utils/dateUtils';
 
 export const AdminControls = ({ 
   selectedDayName, 
   selectedDayId,
+  selectedDate = new Date(),
+  onSelectDate,
+  onSelectDay,
   onAddTask, 
   onResetDefaults, 
-  currentTheme,
-  onSelectDay
+  currentTheme 
 }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('work');
   const [time, setTime] = useState('09:00 AM');
   const [showCalendar, setShowCalendar] = useState(false);
 
-  // Calendar State: Defaults to current month & year
-  const today = new Date();
-  const [currentMonthDate, setCurrentMonthDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Calendar month view state (synced with selectedDate initially)
+  const [currentMonthDate, setCurrentMonthDate] = useState(
+    new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+  );
 
-  // Weekday day IDs mapped from JS getDay() (0 = Sun, 1 = Mon, ..., 6 = Sat)
-  const jsDayToAppDayId = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  // Sync calendar month view whenever selectedDate changes from DaySelector
+  useEffect(() => {
+    setCurrentMonthDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+  }, [selectedDate]);
 
+  const getSmartToday = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if ((y === 2026 && m >= 9) || (y === 2027 && m <= 3)) {
+      return now;
+    }
+    return new Date(2026, 9, 20);
+  };
+
+  const today = getSmartToday();
   const year = currentMonthDate.getFullYear();
   const month = currentMonthDate.getMonth(); // 0-indexed
-
-  const TARGET_MONTHS = [
-    { label: 'October', short: 'Oct', year: 2026, month: 9 },
-    { label: 'November', short: 'Nov', year: 2026, month: 10 },
-    { label: 'December', short: 'Dec', year: 2026, month: 11 },
-    { label: 'January', short: 'Jan', year: 2027, month: 0 }
-  ];
 
   // Month navigation
   const handlePrevMonth = () => {
@@ -55,37 +63,30 @@ export const AdminControls = ({
   };
 
   // Calendar calculations
-  // Get days in current month
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  // Day of week of the 1st of month: 0=Sun, 1=Mon, ..., 6=Sat
-  // We want Monday = 0, Sunday = 6
-  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
+  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7; // Monday = 0
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Pick a date from the calendar
+  // Pick a date from the calendar: updates both selectedDate and day ID in exact sync!
   const handlePickDate = (dayNum) => {
     const picked = new Date(year, month, dayNum);
-    setSelectedDate(picked);
+    const dayId = jsDayToDayId(picked.getDay());
 
-    // Sync app active day to this date's day of week
-    const targetDayId = jsDayToAppDayId[picked.getDay()];
-    if (onSelectDay && targetDayId) {
-      onSelectDay(targetDayId);
-    }
+    if (onSelectDate) onSelectDate(picked);
+    if (onSelectDay) onSelectDay(dayId);
   };
 
-  // Target day calculation for the task to be added
-  const targetDayId = jsDayToAppDayId[selectedDate.getDay()];
   const formattedSelectedDate = selectedDate.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
+
   const shortDateLabel = selectedDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric'
@@ -94,6 +95,8 @@ export const AdminControls = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    const targetDayId = jsDayToDayId(selectedDate.getDay());
 
     onAddTask({
       title: title.trim(),
@@ -129,7 +132,7 @@ export const AdminControls = ({
                 Admin Task Scheduler
               </span>
               <span className="text-[10px] text-slate-400 font-medium">
-                Log habits & schedule future dates
+                Log habits & schedule (Oct '26 – Apr '27)
               </span>
             </div>
           </div>
@@ -152,7 +155,7 @@ export const AdminControls = ({
             <button
               type="button"
               onClick={onResetDefaults}
-              title="Reset this week to original initial tasks"
+              title="Reset tasks for the week to default state"
               className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 bg-white/5 hover:bg-rose-500/10 border border-white/5 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -160,7 +163,7 @@ export const AdminControls = ({
           </div>
         </div>
 
-        {/* Interactive Future Calendar Picker (Revealed upon toggle or expansion) */}
+        {/* Interactive Future Calendar Picker (October 2026 to April 2027) */}
         <AnimatePresence>
           {showCalendar && (
             <motion.div
@@ -170,7 +173,7 @@ export const AdminControls = ({
               className="mb-3.5 overflow-hidden rounded-2xl bg-black/40 border border-white/10 p-3"
             >
               {/* Calendar Month Header & Navigation */}
-              <div className="flex items-center justify-between mb-2.5 px-1">
+              <div className="flex items-center justify-between mb-2 px-1">
                 <div className="flex items-center gap-1.5">
                   <CalendarDays className={`w-4 h-4 ${currentTheme.accentClass}`} />
                   <span className="text-xs font-bold text-white font-playful">
@@ -188,7 +191,12 @@ export const AdminControls = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCurrentMonthDate(new Date(today.getFullYear(), today.getMonth(), 1))}
+                    onClick={() => {
+                      const t = getSmartToday();
+                      if (onSelectDate) onSelectDate(t);
+                      if (onSelectDay) onSelectDay(jsDayToDayId(t.getDay()));
+                      setCurrentMonthDate(new Date(t.getFullYear(), t.getMonth(), 1));
+                    }}
                     className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"
                   >
                     Today
@@ -203,23 +211,28 @@ export const AdminControls = ({
                 </div>
               </div>
 
-              {/* Quick 4-Month Selector (October to January) */}
-              <div className="grid grid-cols-4 gap-1 mb-2.5 bg-black/50 p-1 rounded-xl border border-white/5">
-                {TARGET_MONTHS.map((m) => {
+              {/* 7-Month Selector Row: October 2026 to April 2027 */}
+              <div className="flex items-center gap-1 mb-2.5 bg-black/50 p-1 rounded-xl border border-white/5 overflow-x-auto no-scrollbar">
+                {EXTENDED_MONTHS.map((m) => {
                   const isCurrent = year === m.year && month === m.month;
                   return (
                     <button
                       key={m.label}
                       type="button"
-                      onClick={() => setCurrentMonthDate(new Date(m.year, m.month, 1))}
-                      className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center flex flex-col items-center justify-center ${
+                      onClick={() => {
+                        setCurrentMonthDate(new Date(m.year, m.month, 1));
+                        const d = new Date(m.year, m.month, 1);
+                        if (onSelectDate) onSelectDate(d);
+                        if (onSelectDay) onSelectDay(jsDayToDayId(d.getDay()));
+                      }}
+                      className={`flex-1 min-w-[42px] py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center flex flex-col items-center justify-center ${
                         isCurrent
                           ? `${currentTheme.accentBg} text-slate-950 shadow-md font-black`
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       <span className="text-[11px] leading-tight">{m.short}</span>
-                      <span className={`text-[9px] font-mono leading-none ${isCurrent ? 'text-slate-950 font-bold' : 'text-slate-500'}`}>
+                      <span className={`text-[8px] font-mono leading-none ${isCurrent ? 'text-slate-950 font-bold' : 'text-slate-500'}`}>
                         {m.year === 2027 ? "'27" : "'26"}
                       </span>
                     </button>
@@ -278,7 +291,7 @@ export const AdminControls = ({
 
               {/* Selected date preview notification banner */}
               <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400">Scheduled for:</span>
+                <span className="text-slate-400">Selected Date:</span>
                 <span className={`font-bold ${currentTheme.accentClass} flex items-center gap-1`}>
                   <Calendar className="w-3 h-3" />
                   {formattedSelectedDate}
@@ -304,7 +317,7 @@ export const AdminControls = ({
                 onClick={() => setShowCalendar(true)}
                 className="text-[10px] text-slate-400 hover:text-white underline underline-offset-2"
               >
-                Change Date
+                Change Date (Oct - Apr)
               </button>
             )}
           </div>

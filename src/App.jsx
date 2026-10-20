@@ -9,6 +9,7 @@ import { AdminPinModal } from './components/AdminPinModal';
 import { AdminControls } from './components/AdminControls';
 import { THEMES } from './constants/themeConfig';
 import { DAYS_OF_WEEK, INITIAL_TASKS } from './constants/initialData';
+import { getWeekDaysForDate, jsDayToDayId } from './utils/dateUtils';
 import { ShieldCheck } from 'lucide-react';
 
 const STORAGE_KEY_THEME = 'daily_pulse_theme_v1';
@@ -20,9 +21,19 @@ export default function App() {
     return localStorage.getItem(STORAGE_KEY_THEME) || 'jojo';
   });
 
-  // Active day & month selection
-  const [selectedDay, setSelectedDay] = useState('mon');
-  const [selectedMonth, setSelectedMonth] = useState('oct');
+  // Selected date state - single source of truth for DaySelector & Admin Calendar
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if ((y === 2026 && m >= 9) || (y === 2027 && m <= 3)) {
+      return now;
+    }
+    return new Date(2026, 9, 20); // Tuesday, Oct 20, 2026
+  });
+
+  const weekDays = getWeekDaysForDate(selectedDate);
+  const selectedDay = jsDayToDayId(selectedDate.getDay());
 
   // Independent tasks per profile: { jojo: tasksByDay, chocks: tasksByDay }
   const [tasksByProfile, setTasksByProfile] = useState(() => {
@@ -85,7 +96,7 @@ export default function App() {
   const activeDayTasks = tasksByDay[selectedDay] || [];
   const completedCount = activeDayTasks.filter((t) => t.completed).length;
   const totalCount = activeDayTasks.length;
-  const selectedDayObj = DAYS_OF_WEEK.find((d) => d.id === selectedDay) || DAYS_OF_WEEK[0];
+  const selectedDayObj = weekDays.find((d) => d.id === selectedDay) || DAYS_OF_WEEK[0];
 
   // Dynamic Streak calculation for the active profile (starts at 0 and increments day by day)
   const completedDaysCount = DAYS_OF_WEEK.filter((d) => {
@@ -227,14 +238,20 @@ export default function App() {
           selectedDay={selectedDay}
         />
 
-        {/* Interactive Day Selector Pills (Mon - Sun) & Months (Oct - Jan) */}
+        {/* Interactive Day Selector Pills (Mon - Sun) & Months (Oct - Apr) */}
         <DaySelector
-          selectedDay={selectedDay}
-          onSelectDay={(dayId) => setSelectedDay(dayId)}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          onSelectDay={(dayId) => {
+            const found = weekDays.find((d) => d.id === dayId);
+            if (found) setSelectedDate(found.dateObj);
+          }}
           tasksByDay={tasksByDay}
           currentTheme={currentTheme}
-          selectedMonthId={selectedMonth}
-          onSelectMonth={(m) => setSelectedMonth(m)}
+          weekDays={weekDays}
+          onSelectMonth={(monthIdx, year) => {
+            setSelectedDate(new Date(year, monthIdx, 1));
+          }}
         />
 
         {/* Admin Inline Controls (Revealed dynamically once unlocked) */}
@@ -243,10 +260,15 @@ export default function App() {
             <AdminControls
               selectedDayName={selectedDayObj.full}
               selectedDayId={selectedDay}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              onSelectDay={(dayId) => {
+                const found = weekDays.find((d) => d.id === dayId);
+                if (found) setSelectedDate(found.dateObj);
+              }}
               onAddTask={handleAddTask}
               onResetDefaults={handleResetDefaults}
               currentTheme={currentTheme}
-              onSelectDay={(dayId) => setSelectedDay(dayId)}
             />
           )}
         </AnimatePresence>

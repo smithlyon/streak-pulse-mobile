@@ -1,37 +1,43 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, Calendar } from 'lucide-react';
-import { MONTHS_CONFIG } from '../constants/initialData';
+import { EXTENDED_MONTHS, getMondayOfWeek, formatWeekRange, getWeekDaysForDate } from '../utils/dateUtils';
 
 export const DaySelector = ({ 
-  selectedDay, 
-  onSelectDay, 
-  tasksByDay, 
+  selectedDate = new Date(2026, 9, 20), 
+  onSelectDate,
+  onSelectDay,
+  tasksByDay = {}, 
   currentTheme,
-  selectedMonthId = 'oct',
+  weekDays = [],
   onSelectMonth
 }) => {
-  const currentMonth = MONTHS_CONFIG.find(m => m.id === selectedMonthId) || MONTHS_CONFIG[0];
-  const daysList = currentMonth.days;
+  const safeDate = selectedDate instanceof Date && !isNaN(selectedDate) ? selectedDate : new Date(2026, 9, 20);
+  const currentMonthNum = safeDate.getMonth();
+  const currentYear = safeDate.getFullYear();
+  const monday = getMondayOfWeek(safeDate);
+  const weekRangeText = formatWeekRange(monday);
+  const days = weekDays && weekDays.length === 7 ? weekDays : getWeekDaysForDate(safeDate);
 
   return (
     <div className="px-4 py-2">
-      {/* Month Selector Pills: October to January */}
-      <div className="grid grid-cols-4 gap-1.5 mb-2.5 bg-black/40 p-1 rounded-2xl border border-white/5">
-        {MONTHS_CONFIG.map((m) => {
-          const isSelected = selectedMonthId === m.id;
+      {/* 7-Month Selector Pills: October 2026 to April 2027 */}
+      <div className="flex items-center gap-1 mb-2.5 bg-black/40 p-1 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
+        {EXTENDED_MONTHS.map((m) => {
+          const isSelectedMonth = currentMonthNum === m.month && currentYear === m.year;
           return (
             <button
               key={m.id}
-              onClick={() => onSelectMonth && onSelectMonth(m.id)}
-              className={`py-1.5 px-1 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 ${
-                isSelected
+              type="button"
+              onClick={() => onSelectMonth && onSelectMonth(m.month, m.year)}
+              className={`flex-1 min-w-[44px] py-1.5 px-1 rounded-xl text-xs font-bold transition-all text-center flex flex-col items-center justify-center ${
+                isSelectedMonth
                   ? `${currentTheme.accentBg} text-slate-950 shadow-md font-black`
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              <span>{m.short}</span>
-              <span className={`text-[9px] font-mono ${isSelected ? 'text-slate-950 font-bold' : 'text-slate-500'}`}>
+              <span className="text-[11px] leading-tight">{m.short}</span>
+              <span className={`text-[8px] font-mono leading-none ${isSelectedMonth ? 'text-slate-950 font-bold' : 'text-slate-500'}`}>
                 {m.year === 2027 ? "'27" : "'26"}
               </span>
             </button>
@@ -39,21 +45,25 @@ export const DaySelector = ({
         })}
       </div>
 
-      {/* Week Header info */}
-      <div className="flex items-center justify-between mb-2 px-0.5">
+      {/* Week Header info with exact synced dates */}
+      <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>{currentMonth.name} Schedule</span>
+          <span>Week of</span>
         </div>
-        <span className="text-[11px] text-slate-400 font-mono">
-          {currentMonth.range}
+        <span className="text-[11px] text-slate-300 font-mono font-semibold">
+          {weekRangeText}
         </span>
       </div>
 
-      {/* 7 Days Pills Container */}
+      {/* 7 Days Pills Container (Mon - Sun of the active week) */}
       <div className="grid grid-cols-7 gap-1.5 p-1 rounded-2xl bg-black/30 border border-white/5">
-        {daysList.map((day) => {
-          const isSelected = selectedDay === day.id;
+        {days.map((day) => {
+          const isSelected = 
+            day.dateObj.getFullYear() === safeDate.getFullYear() &&
+            day.dateObj.getMonth() === safeDate.getMonth() &&
+            day.dateObj.getDate() === safeDate.getDate();
+
           const dayTasks = tasksByDay[day.id] || [];
           const total = dayTasks.length;
           const completed = dayTasks.filter(t => t.completed).length;
@@ -61,8 +71,11 @@ export const DaySelector = ({
 
           return (
             <button
-              key={day.id}
-              onClick={() => onSelectDay(day.id)}
+              key={day.dateKey}
+              onClick={() => {
+                if (onSelectDate) onSelectDate(day.dateObj);
+                if (onSelectDay) onSelectDay(day.id);
+              }}
               className={`relative py-2 px-1 rounded-xl flex flex-col items-center justify-center transition-all duration-200 group focus:outline-none ${
                 isSelected ? 'text-slate-950 font-bold' : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
@@ -81,7 +94,7 @@ export const DaySelector = ({
                 {day.label}
               </span>
 
-              {/* Date Number */}
+              {/* Date Number - in exact sync with calendar */}
               <span className={`text-xs font-mono font-bold mt-0.5 ${isSelected ? 'text-slate-950' : 'text-slate-200'}`}>
                 {day.dateNum}
               </span>
