@@ -61,12 +61,12 @@ export default function App() {
   const totalCount = activeDayTasks.length;
   const selectedDayObj = DAYS_OF_WEEK.find((d) => d.id === selectedDay) || DAYS_OF_WEEK[0];
 
-  // Dynamic Streak calculation across the week
+  // Dynamic Streak calculation across the week (starts at 0 and increments day by day)
   const completedDaysCount = DAYS_OF_WEEK.filter((d) => {
     const list = tasksByDay[d.id] || [];
     return list.length > 0 && list.every((t) => t.completed);
   }).length;
-  const streakDays = 12 + completedDaysCount;
+  const streakDays = completedDaysCount;
 
   // Handlers
   const handleToggleTask = (taskId) => {

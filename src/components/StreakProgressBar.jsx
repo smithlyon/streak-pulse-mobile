@@ -88,16 +88,14 @@ export const StreakProgressBar = ({
                   Day Streak
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                {isTodayComplete ? (
+              {isTodayComplete && (
+                <p className="text-xs text-slate-400 font-medium mt-0.5">
                   <span className="text-amber-300 font-semibold flex items-center gap-1">
                     <Zap className="w-3 h-3 fill-amber-400 text-amber-400" />
                     Streak active for {dayLabel}!
                   </span>
-                ) : (
-                  <span>Complete habits to build your streak!</span>
-                )}
-              </p>
+                </p>
+              )}
             </div>
           </div>
 
