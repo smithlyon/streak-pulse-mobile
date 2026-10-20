@@ -1,29 +1,58 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, Calendar } from 'lucide-react';
-import { DAYS_OF_WEEK } from '../constants/initialData';
+import { MONTHS_CONFIG } from '../constants/initialData';
 
 export const DaySelector = ({ 
   selectedDay, 
   onSelectDay, 
   tasksByDay, 
-  currentTheme 
+  currentTheme,
+  selectedMonthId = 'oct',
+  onSelectMonth
 }) => {
+  const currentMonth = MONTHS_CONFIG.find(m => m.id === selectedMonthId) || MONTHS_CONFIG[0];
+  const daysList = currentMonth.days;
+
   return (
     <div className="px-4 py-2">
-      <div className="flex items-center justify-between mb-2">
+      {/* Month Selector Pills: October to January */}
+      <div className="grid grid-cols-4 gap-1.5 mb-2.5 bg-black/40 p-1 rounded-2xl border border-white/5">
+        {MONTHS_CONFIG.map((m) => {
+          const isSelected = selectedMonthId === m.id;
+          return (
+            <button
+              key={m.id}
+              onClick={() => onSelectMonth && onSelectMonth(m.id)}
+              className={`py-1.5 px-1 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 ${
+                isSelected
+                  ? `${currentTheme.accentBg} text-slate-950 shadow-md font-black`
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span>{m.short}</span>
+              <span className={`text-[9px] font-mono ${isSelected ? 'text-slate-950 font-bold' : 'text-slate-500'}`}>
+                {m.year === 2027 ? "'27" : "'26"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Week Header info */}
+      <div className="flex items-center justify-between mb-2 px-0.5">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>Weekly Schedule</span>
+          <span>{currentMonth.name} Schedule</span>
         </div>
         <span className="text-[11px] text-slate-400 font-mono">
-          Oct 19 - Oct 25
+          {currentMonth.range}
         </span>
       </div>
 
       {/* 7 Days Pills Container */}
       <div className="grid grid-cols-7 gap-1.5 p-1 rounded-2xl bg-black/30 border border-white/5">
-        {DAYS_OF_WEEK.map((day) => {
+        {daysList.map((day) => {
           const isSelected = selectedDay === day.id;
           const dayTasks = tasksByDay[day.id] || [];
           const total = dayTasks.length;

@@ -20,8 +20,9 @@ export default function App() {
     return localStorage.getItem(STORAGE_KEY_THEME) || 'jojo';
   });
 
-  // Active day selection: 'mon' to 'sun'
+  // Active day & month selection
   const [selectedDay, setSelectedDay] = useState('mon');
+  const [selectedMonth, setSelectedMonth] = useState('oct');
 
   // Independent tasks per profile: { jojo: tasksByDay, chocks: tasksByDay }
   const [tasksByProfile, setTasksByProfile] = useState(() => {
@@ -226,12 +227,14 @@ export default function App() {
           selectedDay={selectedDay}
         />
 
-        {/* Interactive Day Selector Pills (Mon - Sun) */}
+        {/* Interactive Day Selector Pills (Mon - Sun) & Months (Oct - Jan) */}
         <DaySelector
           selectedDay={selectedDay}
           onSelectDay={(dayId) => setSelectedDay(dayId)}
           tasksByDay={tasksByDay}
           currentTheme={currentTheme}
+          selectedMonthId={selectedMonth}
+          onSelectMonth={(m) => setSelectedMonth(m)}
         />
 
         {/* Admin Inline Controls (Revealed dynamically once unlocked) */}

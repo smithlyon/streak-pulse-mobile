@@ -38,6 +38,13 @@ export const AdminControls = ({
   const year = currentMonthDate.getFullYear();
   const month = currentMonthDate.getMonth(); // 0-indexed
 
+  const TARGET_MONTHS = [
+    { label: 'October', short: 'Oct', year: 2026, month: 9 },
+    { label: 'November', short: 'Nov', year: 2026, month: 10 },
+    { label: 'December', short: 'Dec', year: 2026, month: 11 },
+    { label: 'January', short: 'Jan', year: 2027, month: 0 }
+  ];
+
   // Month navigation
   const handlePrevMonth = () => {
     setCurrentMonthDate(new Date(year, month - 1, 1));
@@ -194,6 +201,30 @@ export const AdminControls = ({
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              </div>
+
+              {/* Quick 4-Month Selector (October to January) */}
+              <div className="grid grid-cols-4 gap-1 mb-2.5 bg-black/50 p-1 rounded-xl border border-white/5">
+                {TARGET_MONTHS.map((m) => {
+                  const isCurrent = year === m.year && month === m.month;
+                  return (
+                    <button
+                      key={m.label}
+                      type="button"
+                      onClick={() => setCurrentMonthDate(new Date(m.year, m.month, 1))}
+                      className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center flex flex-col items-center justify-center ${
+                        isCurrent
+                          ? `${currentTheme.accentBg} text-slate-950 shadow-md font-black`
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="text-[11px] leading-tight">{m.short}</span>
+                      <span className={`text-[9px] font-mono leading-none ${isCurrent ? 'text-slate-950 font-bold' : 'text-slate-500'}`}>
+                        {m.year === 2027 ? "'27" : "'26"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Day of week headers */}

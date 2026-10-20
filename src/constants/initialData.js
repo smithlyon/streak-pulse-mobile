@@ -1,12 +1,71 @@
-export const DAYS_OF_WEEK = [
-  { id: 'mon', label: 'Mon', full: 'Monday', dateNum: '19' },
-  { id: 'tue', label: 'Tue', full: 'Tuesday', dateNum: '20' },
-  { id: 'wed', label: 'Wed', full: 'Wednesday', dateNum: '21' },
-  { id: 'thu', label: 'Thu', full: 'Thursday', dateNum: '22' },
-  { id: 'fri', label: 'Fri', full: 'Friday', dateNum: '23' },
-  { id: 'sat', label: 'Sat', full: 'Saturday', dateNum: '24' },
-  { id: 'sun', label: 'Sun', full: 'Sunday', dateNum: '25' }
+export const MONTHS_CONFIG = [
+  { 
+    id: 'oct', 
+    name: 'October', 
+    short: 'Oct',
+    year: 2026, 
+    range: 'Oct 19 - Oct 25',
+    days: [
+      { id: 'mon', label: 'Mon', full: 'Monday', dateNum: '19' },
+      { id: 'tue', label: 'Tue', full: 'Tuesday', dateNum: '20' },
+      { id: 'wed', label: 'Wed', full: 'Wednesday', dateNum: '21' },
+      { id: 'thu', label: 'Thu', full: 'Thursday', dateNum: '22' },
+      { id: 'fri', label: 'Fri', full: 'Friday', dateNum: '23' },
+      { id: 'sat', label: 'Sat', full: 'Saturday', dateNum: '24' },
+      { id: 'sun', label: 'Sun', full: 'Sunday', dateNum: '25' }
+    ]
+  },
+  { 
+    id: 'nov', 
+    name: 'November', 
+    short: 'Nov',
+    year: 2026, 
+    range: 'Nov 16 - Nov 22',
+    days: [
+      { id: 'mon', label: 'Mon', full: 'Monday', dateNum: '16' },
+      { id: 'tue', label: 'Tue', full: 'Tuesday', dateNum: '17' },
+      { id: 'wed', label: 'Wed', full: 'Wednesday', dateNum: '18' },
+      { id: 'thu', label: 'Thu', full: 'Thursday', dateNum: '19' },
+      { id: 'fri', label: 'Fri', full: 'Friday', dateNum: '20' },
+      { id: 'sat', label: 'Sat', full: 'Saturday', dateNum: '21' },
+      { id: 'sun', label: 'Sun', full: 'Sunday', dateNum: '22' }
+    ]
+  },
+  { 
+    id: 'dec', 
+    name: 'December', 
+    short: 'Dec',
+    year: 2026, 
+    range: 'Dec 14 - Dec 20',
+    days: [
+      { id: 'mon', label: 'Mon', full: 'Monday', dateNum: '14' },
+      { id: 'tue', label: 'Tue', full: 'Tuesday', dateNum: '15' },
+      { id: 'wed', label: 'Wed', full: 'Wednesday', dateNum: '16' },
+      { id: 'thu', label: 'Thu', full: 'Thursday', dateNum: '17' },
+      { id: 'fri', label: 'Fri', full: 'Friday', dateNum: '18' },
+      { id: 'sat', label: 'Sat', full: 'Saturday', dateNum: '19' },
+      { id: 'sun', label: 'Sun', full: 'Sunday', dateNum: '20' }
+    ]
+  },
+  { 
+    id: 'jan', 
+    name: 'January', 
+    short: 'Jan',
+    year: 2027, 
+    range: 'Jan 18 - Jan 24',
+    days: [
+      { id: 'mon', label: 'Mon', full: 'Monday', dateNum: '18' },
+      { id: 'tue', label: 'Tue', full: 'Tuesday', dateNum: '19' },
+      { id: 'wed', label: 'Wed', full: 'Wednesday', dateNum: '20' },
+      { id: 'thu', label: 'Thu', full: 'Thursday', dateNum: '21' },
+      { id: 'fri', label: 'Fri', full: 'Friday', dateNum: '22' },
+      { id: 'sat', label: 'Sat', full: 'Saturday', dateNum: '23' },
+      { id: 'sun', label: 'Sun', full: 'Sunday', dateNum: '24' }
+    ]
+  }
 ];
+
+export const DAYS_OF_WEEK = MONTHS_CONFIG[0].days;
 
 export const CATEGORIES = [
   { id: 'fitness', label: 'Fitness', icon: 'Flame', color: 'from-orange-500 to-amber-500' },
