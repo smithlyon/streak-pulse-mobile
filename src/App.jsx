@@ -9,7 +9,7 @@ import { AdminPinModal } from './components/AdminPinModal';
 import { AdminControls } from './components/AdminControls';
 import { THEMES } from './constants/themeConfig';
 import { DAYS_OF_WEEK, INITIAL_TASKS } from './constants/initialData';
-import { getWeekDaysForDate, jsDayToDayId } from './utils/dateUtils';
+import { getWeekDaysForDate, jsDayToDayId, formatDateKey, getMondayOfWeek } from './utils/dateUtils';
 import { ShieldCheck } from 'lucide-react';
 
 const STORAGE_KEY_THEME = 'daily_pulse_theme_v1';
@@ -89,97 +89,150 @@ export default function App() {
 
   const currentTheme = THEMES[themeId] || THEMES.jojo;
 
-  // Active profile's tasks for the week
-  const tasksByDay = tasksByProfile[themeId] || INITIAL_TASKS;
+  // Helper to retrieve tasks for any specific Date across any month
+  const getTasksForDate = (dateObj) => {
+    if (!dateObj) return [];
+    const dateKey = formatDateKey(dateObj);
+    const profileTasks = tasksByProfile[themeId] || {};
 
-  // Active day calculations for active profile
-  const activeDayTasks = tasksByDay[selectedDay] || [];
+    // 1. Explicitly stored tasks for this dateKey
+    if (profileTasks[dateKey] !== undefined) {
+      return profileTasks[dateKey];
+    }
+
+    // 2. Default tasks for the initial launch week (Oct 19 - Oct 25, 2026)
+    const monday = getMondayOfWeek(dateObj);
+    const isLaunchWeek =
+      monday.getFullYear() === 2026 &&
+      monday.getMonth() === 9 &&
+      monday.getDate() === 19;
+
+    const dayId = jsDayToDayId(dateObj.getDay());
+    if (isLaunchWeek) {
+      if (profileTasks[dayId] !== undefined) {
+        return profileTasks[dayId];
+      }
+      return INITIAL_TASKS[dayId] || [];
+    }
+
+    // 3. Any other date has 0 tasks by default until allocated
+    return [];
+  };
+
+  // Active day tasks & counts for currently selected date
+  const activeDayTasks = getTasksForDate(selectedDate);
   const completedCount = activeDayTasks.filter((t) => t.completed).length;
   const totalCount = activeDayTasks.length;
-  const selectedDayObj = weekDays.find((d) => d.id === selectedDay) || DAYS_OF_WEEK[0];
+  const selectedDayObj = weekDays.find((d) => d.id === selectedDay) || {
+    id: selectedDay,
+    label: selectedDay.toUpperCase(),
+    full: selectedDay === 'mon' ? 'Monday' :
+          selectedDay === 'tue' ? 'Tuesday' :
+          selectedDay === 'wed' ? 'Wednesday' :
+          selectedDay === 'thu' ? 'Thursday' :
+          selectedDay === 'fri' ? 'Friday' :
+          selectedDay === 'sat' ? 'Saturday' : 'Sunday',
+    dateNum: selectedDate.getDate()
+  };
+
+  // Current active week tasks map for DaySelector & StreakProgressBar
+  const currentWeekTasksByDay = {};
+  weekDays.forEach((d) => {
+    currentWeekTasksByDay[d.id] = getTasksForDate(d.dateObj);
+    currentWeekTasksByDay[d.dateKey] = getTasksForDate(d.dateObj);
+  });
 
   // Dynamic Streak calculation for the active profile (starts at 0 and increments day by day)
-  const completedDaysCount = DAYS_OF_WEEK.filter((d) => {
-    const list = tasksByDay[d.id] || [];
+  const completedDaysCount = weekDays.filter((d) => {
+    const list = getTasksForDate(d.dateObj);
     return list.length > 0 && list.every((t) => t.completed);
   }).length;
   const streakDays = completedDaysCount;
 
-  // Handlers (operate strictly on active profile)
+  // Handlers (operate strictly on active profile and active date)
   const handleToggleTask = (taskId) => {
     if (!isAdminUnlocked) {
       showToast('Admin login required to check off tasks');
       setIsPinModalOpen(true);
       return;
     }
+    const dateKey = formatDateKey(selectedDate);
+    const currentTasks = getTasksForDate(selectedDate);
+    const updated = currentTasks.map((task) =>
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    );
+
     setTasksByProfile((prev) => {
       const currentProfileTasks = prev[themeId] || {};
-      const dayTasks = currentProfileTasks[selectedDay] || [];
-      const updated = dayTasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      );
       return {
         ...prev,
         [themeId]: {
           ...currentProfileTasks,
-          [selectedDay]: updated
+          [dateKey]: updated
         }
       };
     });
   };
 
   const handleDeleteTask = (taskId) => {
+    const dateKey = formatDateKey(selectedDate);
+    const currentTasks = getTasksForDate(selectedDate);
+    const updated = currentTasks.filter((task) => task.id !== taskId);
+
     setTasksByProfile((prev) => {
       const currentProfileTasks = prev[themeId] || {};
-      const dayTasks = currentProfileTasks[selectedDay] || [];
-      const updated = dayTasks.filter((task) => task.id !== taskId);
       return {
         ...prev,
         [themeId]: {
           ...currentProfileTasks,
-          [selectedDay]: updated
+          [dateKey]: updated
         }
       };
     });
+    showToast('Task removed');
   };
 
-  const handleAddTask = ({ title, category, time, targetDay, dateStr }) => {
-    const dayKey = targetDay || selectedDay;
+  const handleAddTask = ({ title, category, time, targetDate, dateStr }) => {
+    const taskDate = targetDate ? new Date(targetDate) : selectedDate;
+    const dateKey = formatDateKey(taskDate);
+    const existingTasks = getTasksForDate(taskDate);
+
+    const formattedLabel = taskDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+
     const newTask = {
-      id: `${dayKey}-${Date.now()}`,
+      id: `${dateKey}-${Date.now()}`,
       title,
       category,
       time,
       completed: false,
-      dateStr: dateStr || null
+      dateKey,
+      dateStr: formattedLabel
     };
 
     setTasksByProfile((prev) => {
       const currentProfileTasks = prev[themeId] || {};
-      const dayTasks = currentProfileTasks[dayKey] || [];
       return {
         ...prev,
         [themeId]: {
           ...currentProfileTasks,
-          [dayKey]: [newTask, ...dayTasks]
+          [dateKey]: [newTask, ...existingTasks]
         }
       };
     });
 
-    if (dateStr) {
-      showToast(`Task scheduled ahead for ${dateStr}!`);
-    } else {
-      showToast(`Task added for ${dayKey.toUpperCase()}!`);
-    }
+    showToast(`Task allocated for ${formattedLabel}!`);
   };
 
   const handleResetDefaults = () => {
-    if (window.confirm(`Reset ${currentTheme.name}'s tasks for the week to default state?`)) {
+    if (window.confirm(`Reset ${currentTheme.name}'s tasks to default initial state?`)) {
       setTasksByProfile((prev) => ({
         ...prev,
         [themeId]: JSON.parse(JSON.stringify(INITIAL_TASKS))
       }));
-      showToast(`${currentTheme.name}'s weekly tasks reset to defaults`);
+      showToast(`${currentTheme.name}'s tasks reset to defaults`);
     }
   };
 
@@ -234,7 +287,7 @@ export default function App() {
           currentTheme={currentTheme}
           streakDays={streakDays}
           dayLabel={selectedDayObj.full}
-          tasksByDay={tasksByDay}
+          tasksByDay={currentWeekTasksByDay}
           selectedDay={selectedDay}
         />
 
@@ -242,11 +295,7 @@ export default function App() {
         <DaySelector
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
-          onSelectDay={(dayId) => {
-            const found = weekDays.find((d) => d.id === dayId);
-            if (found) setSelectedDate(found.dateObj);
-          }}
-          tasksByDay={tasksByDay}
+          tasksByDay={currentWeekTasksByDay}
           currentTheme={currentTheme}
           weekDays={weekDays}
           onSelectMonth={(monthIdx, year) => {
@@ -262,13 +311,10 @@ export default function App() {
               selectedDayId={selectedDay}
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
-              onSelectDay={(dayId) => {
-                const found = weekDays.find((d) => d.id === dayId);
-                if (found) setSelectedDate(found.dateObj);
-              }}
               onAddTask={handleAddTask}
               onResetDefaults={handleResetDefaults}
               currentTheme={currentTheme}
+              getTasksForDate={getTasksForDate}
             />
           )}
         </AnimatePresence>
@@ -281,7 +327,7 @@ export default function App() {
             onDeleteTask={handleDeleteTask}
             isAdminUnlocked={isAdminUnlocked}
             currentTheme={currentTheme}
-            dayName={selectedDayObj.full}
+            dayName={`${selectedDayObj.full}, ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
             onOpenAdmin={() => setIsPinModalOpen(true)}
           />
         </div>

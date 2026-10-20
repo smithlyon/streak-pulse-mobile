@@ -64,7 +64,7 @@ export const DaySelector = ({
             day.dateObj.getMonth() === safeDate.getMonth() &&
             day.dateObj.getDate() === safeDate.getDate();
 
-          const dayTasks = tasksByDay[day.id] || [];
+          const dayTasks = tasksByDay[day.dateKey] || tasksByDay[day.id] || [];
           const total = dayTasks.length;
           const completed = dayTasks.filter(t => t.completed).length;
           const isDone = total > 0 && completed === total;
@@ -74,7 +74,6 @@ export const DaySelector = ({
               key={day.dateKey}
               onClick={() => {
                 if (onSelectDate) onSelectDate(day.dateObj);
-                if (onSelectDay) onSelectDay(day.id);
               }}
               className={`relative py-2 px-1 rounded-xl flex flex-col items-center justify-center transition-all duration-200 group focus:outline-none ${
                 isSelected ? 'text-slate-950 font-bold' : 'text-slate-400 hover:text-white hover:bg-white/5'

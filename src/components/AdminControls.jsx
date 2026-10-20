@@ -19,10 +19,10 @@ export const AdminControls = ({
   selectedDayId,
   selectedDate = new Date(),
   onSelectDate,
-  onSelectDay,
   onAddTask, 
   onResetDefaults, 
-  currentTheme 
+  currentTheme,
+  getTasksForDate
 }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('work');
@@ -34,7 +34,7 @@ export const AdminControls = ({
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
   );
 
-  // Sync calendar month view whenever selectedDate changes from DaySelector
+  // Sync calendar month view whenever selectedDate changes
   useEffect(() => {
     setCurrentMonthDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
   }, [selectedDate]);
@@ -71,13 +71,10 @@ export const AdminControls = ({
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Pick a date from the calendar: updates both selectedDate and day ID in exact sync!
+  // Pick a date from the calendar: updates selectedDate seamlessly without snapping back
   const handlePickDate = (dayNum) => {
     const picked = new Date(year, month, dayNum);
-    const dayId = jsDayToDayId(picked.getDay());
-
     if (onSelectDate) onSelectDate(picked);
-    if (onSelectDay) onSelectDay(dayId);
   };
 
   const formattedSelectedDate = selectedDate.toLocaleDateString('en-US', {
@@ -96,13 +93,11 @@ export const AdminControls = ({
     e.preventDefault();
     if (!title.trim()) return;
 
-    const targetDayId = jsDayToDayId(selectedDate.getDay());
-
     onAddTask({
       title: title.trim(),
       category,
       time: time.trim() || 'Flexible',
-      targetDay: targetDayId,
+      targetDate: selectedDate,
       dateStr: shortDateLabel
     });
 
@@ -193,9 +188,8 @@ export const AdminControls = ({
                     type="button"
                     onClick={() => {
                       const t = getSmartToday();
-                      if (onSelectDate) onSelectDate(t);
-                      if (onSelectDay) onSelectDay(jsDayToDayId(t.getDay()));
                       setCurrentMonthDate(new Date(t.getFullYear(), t.getMonth(), 1));
+                      if (onSelectDate) onSelectDate(t);
                     }}
                     className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"
                   >
@@ -220,10 +214,9 @@ export const AdminControls = ({
                       key={m.label}
                       type="button"
                       onClick={() => {
-                        setCurrentMonthDate(new Date(m.year, m.month, 1));
                         const d = new Date(m.year, m.month, 1);
+                        setCurrentMonthDate(d);
                         if (onSelectDate) onSelectDate(d);
-                        if (onSelectDay) onSelectDay(jsDayToDayId(d.getDay()));
                       }}
                       className={`flex-1 min-w-[42px] py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center flex flex-col items-center justify-center ${
                         isCurrent
@@ -267,6 +260,10 @@ export const AdminControls = ({
                     today.getMonth() === month &&
                     today.getDate() === dayNum;
 
+                  const cellDate = new Date(year, month, dayNum);
+                  const cellTasks = getTasksForDate ? getTasksForDate(cellDate) : [];
+                  const hasAllocatedTasks = cellTasks.length > 0;
+
                   return (
                     <button
                       key={`day-${dayNum}`}
@@ -281,7 +278,15 @@ export const AdminControls = ({
                       }`}
                     >
                       {dayNum}
-                      {isTodayDate && !isCurrentDaySelected && (
+                      {/* Task allocation indicator dot */}
+                      {hasAllocatedTasks && (
+                        <span className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${
+                          isCurrentDaySelected
+                            ? 'bg-slate-950 ring-1 ring-white/60'
+                            : isJojo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.9)]' : 'bg-purple-400 shadow-[0_0_6px_rgba(192,132,252,0.9)]'
+                        }`} />
+                      )}
+                      {isTodayDate && !isCurrentDaySelected && !hasAllocatedTasks && (
                         <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${isJojo ? 'bg-sky-400' : 'bg-purple-400'}`} />
                       )}
                     </button>
