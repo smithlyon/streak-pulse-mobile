@@ -131,26 +131,34 @@ export default function App() {
     });
   };
 
-  const handleAddTask = ({ title, category, time }) => {
+  const handleAddTask = ({ title, category, time, targetDay, dateStr }) => {
+    const dayKey = targetDay || selectedDay;
     const newTask = {
-      id: `${selectedDay}-${Date.now()}`,
+      id: `${dayKey}-${Date.now()}`,
       title,
       category,
       time,
-      completed: false
+      completed: false,
+      dateStr: dateStr || null
     };
 
     setTasksByProfile((prev) => {
       const currentProfileTasks = prev[themeId] || {};
-      const dayTasks = currentProfileTasks[selectedDay] || [];
+      const dayTasks = currentProfileTasks[dayKey] || [];
       return {
         ...prev,
         [themeId]: {
           ...currentProfileTasks,
-          [selectedDay]: [newTask, ...dayTasks]
+          [dayKey]: [newTask, ...dayTasks]
         }
       };
     });
+
+    if (dateStr) {
+      showToast(`Task scheduled ahead for ${dateStr}!`);
+    } else {
+      showToast(`Task added for ${dayKey.toUpperCase()}!`);
+    }
   };
 
   const handleResetDefaults = () => {
@@ -231,9 +239,11 @@ export default function App() {
           {isAdminUnlocked && (
             <AdminControls
               selectedDayName={selectedDayObj.full}
+              selectedDayId={selectedDay}
               onAddTask={handleAddTask}
               onResetDefaults={handleResetDefaults}
               currentTheme={currentTheme}
+              onSelectDay={(dayId) => setSelectedDay(dayId)}
             />
           )}
         </AnimatePresence>

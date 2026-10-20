@@ -12,7 +12,8 @@ import {
   Sparkles,
   ListTodo,
   CheckCircle2,
-  Lock
+  Lock,
+  Calendar
 } from 'lucide-react';
 
 const categoryIcons = {
@@ -204,6 +205,14 @@ export const TaskList = ({
                         <span className="inline-flex items-center gap-1 text-[9px] text-slate-400 font-mono">
                           <Clock className="w-2.5 h-2.5 text-slate-500" />
                           <span>{task.time}</span>
+                        </span>
+                      )}
+
+                      {/* Scheduled Date Badge if set */}
+                      {task.dateStr && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-full bg-white/5 text-amber-300 border border-amber-500/20 font-mono">
+                          <Calendar className="w-2.5 h-2.5 text-amber-400" />
+                          <span>{task.dateStr}</span>
                         </span>
                       )}
                     </div>
