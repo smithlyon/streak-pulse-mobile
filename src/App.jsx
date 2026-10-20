@@ -70,6 +70,11 @@ export default function App() {
 
   // Handlers
   const handleToggleTask = (taskId) => {
+    if (!isAdminUnlocked) {
+      showToast('Admin login required to check off tasks');
+      setIsPinModalOpen(true);
+      return;
+    }
     setTasksByDay((prev) => {
       const dayTasks = prev[selectedDay] || [];
       const updated = dayTasks.map((task) =>

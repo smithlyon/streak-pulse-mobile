@@ -11,7 +11,8 @@ import {
   Clock, 
   Sparkles,
   ListTodo,
-  CheckCircle2
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 
 const categoryIcons = {
@@ -132,17 +133,30 @@ export const TaskList = ({
                     task.completed ? 'opacity-70 bg-black/40' : 'shadow-md'
                   }`}
                 >
-                  {/* Interactive Custom Checkbox */}
+                  {/* Custom Checkbox (Admin-Only Check-Off) */}
                   <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={() => onToggleTask(task.id)}
+                    whileTap={isAdminUnlocked ? { scale: 0.85 } : { scale: 0.96 }}
+                    onClick={() => {
+                      if (!isAdminUnlocked) {
+                        onOpenAdmin();
+                      } else {
+                        onToggleTask(task.id);
+                      }
+                    }}
+                    title={
+                      isAdminUnlocked 
+                        ? (task.completed ? "Mark incomplete (Admin)" : "Check off task (Admin)") 
+                        : "Admin login required to check off tasks"
+                    }
                     className={`relative flex-shrink-0 w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 focus:outline-none ${
                       task.completed
                         ? currentTheme.checkActive
-                        : 'border-slate-600 bg-black/40 hover:border-slate-400'
+                        : isAdminUnlocked
+                        ? 'border-slate-500 bg-black/40 hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                        : 'border-slate-700 bg-black/25 opacity-60 hover:opacity-100 hover:border-slate-500 cursor-pointer'
                     }`}
                   >
-                    {task.completed && (
+                    {task.completed ? (
                       <motion.div
                         initial={{ scale: 0, rotate: -45 }}
                         animate={{ scale: 1, rotate: 0 }}
@@ -150,13 +164,23 @@ export const TaskList = ({
                       >
                         <Check className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />
                       </motion.div>
-                    )}
+                    ) : !isAdminUnlocked ? (
+                      <Lock className="w-2.5 h-2.5 text-slate-500 opacity-60" />
+                    ) : null}
                   </motion.button>
 
                   {/* Task Content: Title & Metas */}
                   <div 
-                    className="flex-1 min-w-0 cursor-pointer select-none"
-                    onClick={() => onToggleTask(task.id)}
+                    className={`flex-1 min-w-0 select-none ${
+                      isAdminUnlocked ? 'cursor-pointer' : 'cursor-default'
+                    }`}
+                    onClick={() => {
+                      if (isAdminUnlocked) {
+                        onToggleTask(task.id);
+                      } else {
+                        onOpenAdmin();
+                      }
+                    }}
                   >
                     <p 
                       className={`text-xs font-semibold leading-snug transition-all duration-200 truncate ${
