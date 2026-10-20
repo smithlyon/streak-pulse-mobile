@@ -1,104 +1,157 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, CheckCircle2, Trophy, Zap } from 'lucide-react';
+import { Flame, Sparkles, Check, Zap } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { DAYS_OF_WEEK } from '../constants/initialData';
 
 export const StreakProgressBar = ({ 
   completedCount, 
   totalCount, 
   currentTheme,
   streakDays = 14,
-  dayLabel = 'Today'
+  dayLabel = 'Today',
+  tasksByDay = {},
+  selectedDay = 'mon'
 }) => {
-  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-  const isComplete = totalCount > 0 && completedCount === totalCount;
-  const prevPercentageRef = useRef(percentage);
+  const isTodayComplete = totalCount > 0 && completedCount === totalCount;
+  const prevCompleteRef = useRef(isTodayComplete);
 
-  // Trigger celebration confetti when hitting 100%
+  // Trigger celebration confetti when today's streak is completed
   useEffect(() => {
-    if (percentage === 100 && prevPercentageRef.current !== 100) {
+    if (isTodayComplete && !prevCompleteRef.current) {
       confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.35 },
-        colors: currentTheme.id === 'jojo' ? ['#38bdf8', '#0284c7', '#bae6fd'] : ['#c084fc', '#9333ea', '#f5d0fe']
+        particleCount: 65,
+        spread: 70,
+        origin: { y: 0.3 },
+        colors: ['#f97316', '#fbbf24', '#ef4444', '#f59e0b']
       });
     }
-    prevPercentageRef.current = percentage;
-  }, [percentage, currentTheme.id]);
+    prevCompleteRef.current = isTodayComplete;
+  }, [isTodayComplete]);
 
   return (
     <div className="px-4 py-2">
-      <div className={`p-4 rounded-3xl ${currentTheme.card} border backdrop-blur-md transition-all duration-300 shadow-lg relative overflow-hidden`}>
-        {/* Background ambient gradient glow */}
+      <div className={`p-4 rounded-3xl ${currentTheme.card} border backdrop-blur-md transition-all duration-300 shadow-xl relative overflow-hidden`}>
+        {/* Ambient warm fiery glow in background */}
         <div 
-          className={`absolute -right-8 -top-8 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none ${
-            currentTheme.id === 'jojo' ? 'bg-sky-400' : 'bg-purple-500'
-          }`} 
+          className="absolute -right-6 -top-6 w-36 h-36 rounded-full blur-3xl opacity-25 pointer-events-none bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500" 
         />
 
-        {/* Top row: Streak counter + status badge */}
-        <div className="flex items-center justify-between mb-3 relative z-10">
-          <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-2xl ${currentTheme.accentBadge} flex items-center justify-center`}>
-              <Flame className={`w-5 h-5 ${currentTheme.accentClass} animate-bounce`} />
+        {/* Duolingo-Style Main Streak Section */}
+        <div className="flex items-center justify-between relative z-10 mb-4">
+          <div className="flex items-center gap-3.5">
+            {/* Animated Duolingo Fiery Flame Icon */}
+            <div className="relative">
+              <motion.div
+                animate={isTodayComplete ? {
+                  scale: [1, 1.15, 1.05, 1.18, 1],
+                  rotate: [-3, 3, -2, 2, 0]
+                } : {
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{
+                  duration: 2.2,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  ease: "easeInOut"
+                }}
+                className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-lg shadow-orange-500/35 flex items-center justify-center cursor-pointer"
+              >
+                <div className="w-full h-full rounded-[14px] bg-[#160b05] flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-orange-500/30 via-amber-400/20 to-transparent" />
+                  <Flame className="w-8 h-8 text-amber-400 fill-amber-400 filter drop-shadow-[0_0_10px_rgba(251,191,36,0.9)] animate-pulse" />
+                </div>
+              </motion.div>
+
+              {/* Sparkle badge on flame corner */}
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 flex items-center justify-center shadow-md shadow-amber-500/50"
+              >
+                <Sparkles className="w-3 h-3 text-slate-950 fill-slate-950" />
+              </motion.div>
             </div>
+
+            {/* Streak Number & Label */}
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-extrabold text-white tracking-tight">
-                  {streakDays} Day Streak
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-0.5">
-                  <Zap className="w-2.5 h-2.5 fill-amber-400" /> Active
+              <div className="flex items-baseline gap-2">
+                <motion.span 
+                  key={streakDays}
+                  initial={{ scale: 0.8, y: -4 }}
+                  animate={{ scale: 1, y: 0 }}
+                  className="text-4xl font-black font-playful tracking-tight text-white filter drop-shadow-sm"
+                >
+                  {streakDays}
+                </motion.span>
+                <span className="text-xs font-black uppercase tracking-wider text-amber-400 font-playful">
+                  Day Streak
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
-                {isComplete ? 'All targets accomplished! 🎉' : `${dayLabel}'s focus progress`}
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                {isTodayComplete ? (
+                  <span className="text-amber-300 font-semibold flex items-center gap-1">
+                    <Zap className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    Streak active for {dayLabel}!
+                  </span>
+                ) : (
+                  <span>Complete habits to build your streak!</span>
+                )}
               </p>
             </div>
           </div>
 
-          {/* Real-time Percentage Badge */}
+          {/* Quick Streak Status Chip */}
           <div className="text-right">
-            <motion.div 
-              key={percentage}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className={`text-2xl font-black tracking-tight ${currentTheme.accentClass} font-mono`}
-            >
-              {percentage}%
-            </motion.div>
-            <div className="text-[10px] font-semibold text-slate-400">
-              {completedCount}/{totalCount} Completed
-            </div>
+            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-sm ${
+              isTodayComplete
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/20'
+                : 'bg-white/5 text-slate-400 border-white/10'
+            }`}>
+              <Flame className={`w-3 h-3 ${isTodayComplete ? 'text-amber-400 fill-amber-400' : 'text-slate-500'}`} />
+              <span>{isTodayComplete ? 'Active' : `${totalCount - completedCount} left`}</span>
+            </span>
           </div>
         </div>
 
-        {/* Dynamic Progress Bar */}
-        <div className={`relative h-3 w-full rounded-full overflow-hidden ${currentTheme.progressTrack} border p-[2px]`}>
-          <motion.div
-            className={`h-full rounded-full ${currentTheme.progressBar}`}
-            initial={{ width: 0 }}
-            animate={{ width: `${percentage}%` }}
-            transition={{ type: "spring", stiffness: 120, damping: 20 }}
-          />
-        </div>
+        {/* Duolingo 7-Day Streak Calendar Row */}
+        <div className="pt-3 border-t border-white/10">
+          <div className="flex items-center justify-between gap-1">
+            {DAYS_OF_WEEK.map((day) => {
+              const dayTasks = tasksByDay[day.id] || [];
+              const hasTasks = dayTasks.length > 0;
+              const isDayComplete = hasTasks && dayTasks.every((t) => t.completed);
+              const isSelected = selectedDay === day.id;
 
-        {/* Bottom micro stats */}
-        <div className="flex items-center justify-between mt-3 text-[11px] text-slate-400 pt-2 border-t border-white/5">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            <span>{isComplete ? 'Perfect completion' : `${totalCount - completedCount} tasks remaining`}</span>
-          </div>
+              return (
+                <div 
+                  key={day.id} 
+                  className="flex-1 flex flex-col items-center gap-1"
+                >
+                  <span className={`text-[10px] font-bold uppercase tracking-tight ${
+                    isSelected ? 'text-amber-400' : 'text-slate-400'
+                  }`}>
+                    {day.label[0]}
+                  </span>
 
-          <div className="flex items-center gap-1 font-medium text-slate-300">
-            {isComplete ? (
-              <span className="text-emerald-400 flex items-center gap-1">
-                <Trophy className="w-3.5 h-3.5" /> Bonus Unlocked
-              </span>
-            ) : (
-              <span>Target: 100%</span>
-            )}
+                  <div 
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 relative ${
+                      isDayComplete
+                        ? 'bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/40 ring-1 ring-amber-300/40'
+                        : isSelected
+                        ? 'bg-white/10 text-slate-300 ring-2 ring-amber-400/50'
+                        : 'bg-white/5 text-slate-600 border border-white/5'
+                    }`}
+                  >
+                    {isDayComplete ? (
+                      <Flame className="w-4 h-4 text-white fill-white filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                    ) : (
+                      <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-amber-400' : 'bg-slate-700'}`} />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

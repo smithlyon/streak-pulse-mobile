@@ -158,13 +158,15 @@ export default function App() {
           />
         </div>
 
-        {/* Dynamic Daily Streak Progress Bar with real-time percentage */}
+        {/* Duolingo-style Continuous Daily Streak Counter */}
         <StreakProgressBar
           completedCount={completedCount}
           totalCount={totalCount}
           currentTheme={currentTheme}
           streakDays={streakDays}
           dayLabel={selectedDayObj.full}
+          tasksByDay={tasksByDay}
+          selectedDay={selectedDay}
         />
 
         {/* Interactive Day Selector Pills (Mon - Sun) */}
