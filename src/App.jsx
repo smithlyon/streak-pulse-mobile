@@ -7,18 +7,34 @@ import { DaySelector } from './components/DaySelector';
 import { TaskList } from './components/TaskList';
 import { AdminPinModal } from './components/AdminPinModal';
 import { AdminControls } from './components/AdminControls';
+import { DeviceModeModal } from './components/DeviceModeModal';
 import { THEMES } from './constants/themeConfig';
 import { DAYS_OF_WEEK, INITIAL_TASKS } from './constants/initialData';
 import { getWeekDaysForDate, jsDayToDayId, formatDateKey, getMondayOfWeek } from './utils/dateUtils';
-import { ShieldCheck } from 'lucide-react';
+import { subscribeProfileTasks, syncProfileTasksToCloud } from './services/syncService';
+import { ShieldCheck, Lock, Smartphone } from 'lucide-react';
 
 const STORAGE_KEY_THEME = 'daily_pulse_theme_v1';
+const STORAGE_KEY_DEVICE_MODE = 'daily_pulse_device_mode_v1';
+const STORAGE_KEY_LOCKED_PROFILE = 'daily_pulse_locked_profile_v1';
 const getProfileStorageKey = (profile) => `daily_pulse_tasks_${profile}_v2`;
 
 export default function App() {
+  // Device Role: 'admin' (parent phone) or 'child' (child phone)
+  const [deviceMode, setDeviceMode] = useState(() => {
+    return localStorage.getItem(STORAGE_KEY_DEVICE_MODE) || 'admin';
+  });
+
+  // Locked Profile when in child mode (null | 'jojo' | 'chocks')
+  const [lockedProfile, setLockedProfile] = useState(() => {
+    return localStorage.getItem(STORAGE_KEY_LOCKED_PROFILE) || null;
+  });
+
   // Theme state: 'jojo' (sky blue dark) or 'chocks' (rich purple dark)
   const [themeId, setThemeId] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY_THEME) || 'jojo';
+    const saved = localStorage.getItem(STORAGE_KEY_THEME);
+    if (saved) return saved;
+    return 'jojo';
   });
 
   // Selected date state - single source of truth for DaySelector & Admin Calendar
@@ -66,17 +82,39 @@ export default function App() {
     return initial;
   });
 
-  // Admin Mode state
+  // Admin Mode & Modal states
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
+  const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [adminToast, setAdminToast] = useState('');
+
+  // Lock to specific profile if child mode has a locked assignment
+  useEffect(() => {
+    if (deviceMode === 'child' && lockedProfile && (lockedProfile === 'jojo' || lockedProfile === 'chocks')) {
+      setThemeId(lockedProfile);
+    }
+  }, [deviceMode, lockedProfile]);
+
+  // Persist device role and locked profile to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_DEVICE_MODE, deviceMode);
+  }, [deviceMode]);
+
+  useEffect(() => {
+    if (lockedProfile) {
+      localStorage.setItem(STORAGE_KEY_LOCKED_PROFILE, lockedProfile);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_LOCKED_PROFILE);
+    }
+  }, [lockedProfile]);
 
   // Persist theme
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_THEME, themeId);
   }, [themeId]);
 
-  // Persist active profile's tasks
+  // Persist active profile's tasks locally in localStorage as offline fallback
   useEffect(() => {
     try {
       if (tasksByProfile[themeId]) {
@@ -86,6 +124,39 @@ export default function App() {
       console.error(`Failed to save ${themeId} tasks to localStorage`, e);
     }
   }, [tasksByProfile, themeId]);
+
+  // Real-time Cloud Sync with Google Firebase
+  useEffect(() => {
+    // 1. Subscribe to active profile's live updates from Firestore
+    const unsubscribe = subscribeProfileTasks(
+      themeId,
+      (cloudTasks) => {
+        setIsCloudSynced(true);
+        if (cloudTasks && typeof cloudTasks === 'object' && Object.keys(cloudTasks).length > 0) {
+          setTasksByProfile((prev) => ({
+            ...prev,
+            [themeId]: cloudTasks
+          }));
+        }
+      },
+      (err) => {
+        console.warn('Firebase real-time listener notice:', err);
+      }
+    );
+
+    // 2. Broadcast local initial profile tasks to cloud if not already synced
+    if (tasksByProfile[themeId]) {
+      syncProfileTasksToCloud(themeId, tasksByProfile[themeId])
+        .then((ok) => {
+          if (ok) setIsCloudSynced(true);
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [themeId]);
 
   const currentTheme = THEMES[themeId] || THEMES.jojo;
 
@@ -149,9 +220,9 @@ export default function App() {
   }).length;
   const streakDays = completedDaysCount;
 
-  // Handlers (operate strictly on active profile and active date)
+  // Handlers (operate strictly on active profile and active date, pushing instantly to Firebase)
   const handleToggleTask = (taskId) => {
-    if (!isAdminUnlocked) {
+    if (deviceMode === 'child' || !isAdminUnlocked) {
       showToast('Admin login required to check off tasks');
       setIsPinModalOpen(true);
       return;
@@ -162,16 +233,18 @@ export default function App() {
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
 
-    setTasksByProfile((prev) => {
-      const currentProfileTasks = prev[themeId] || {};
-      return {
-        ...prev,
-        [themeId]: {
-          ...currentProfileTasks,
-          [dateKey]: updated
-        }
-      };
-    });
+    const updatedProfileTasks = {
+      ...(tasksByProfile[themeId] || {}),
+      [dateKey]: updated
+    };
+
+    setTasksByProfile((prev) => ({
+      ...prev,
+      [themeId]: updatedProfileTasks
+    }));
+
+    // Broadcast live to Firebase Firestore
+    syncProfileTasksToCloud(themeId, updatedProfileTasks);
   };
 
   const handleDeleteTask = (taskId) => {
@@ -179,16 +252,18 @@ export default function App() {
     const currentTasks = getTasksForDate(selectedDate);
     const updated = currentTasks.filter((task) => task.id !== taskId);
 
-    setTasksByProfile((prev) => {
-      const currentProfileTasks = prev[themeId] || {};
-      return {
-        ...prev,
-        [themeId]: {
-          ...currentProfileTasks,
-          [dateKey]: updated
-        }
-      };
-    });
+    const updatedProfileTasks = {
+      ...(tasksByProfile[themeId] || {}),
+      [dateKey]: updated
+    };
+
+    setTasksByProfile((prev) => ({
+      ...prev,
+      [themeId]: updatedProfileTasks
+    }));
+
+    // Broadcast live to Firebase Firestore
+    syncProfileTasksToCloud(themeId, updatedProfileTasks);
     showToast('Task removed');
   };
 
@@ -212,33 +287,36 @@ export default function App() {
       dateStr: formattedLabel
     };
 
-    setTasksByProfile((prev) => {
-      const currentProfileTasks = prev[themeId] || {};
-      return {
-        ...prev,
-        [themeId]: {
-          ...currentProfileTasks,
-          [dateKey]: [newTask, ...existingTasks]
-        }
-      };
-    });
+    const updatedProfileTasks = {
+      ...(tasksByProfile[themeId] || {}),
+      [dateKey]: [newTask, ...existingTasks]
+    };
 
+    setTasksByProfile((prev) => ({
+      ...prev,
+      [themeId]: updatedProfileTasks
+    }));
+
+    // Broadcast live to Firebase Firestore
+    syncProfileTasksToCloud(themeId, updatedProfileTasks);
     showToast(`Task allocated for ${formattedLabel}!`);
   };
 
   const handleResetDefaults = () => {
     if (window.confirm(`Reset ${currentTheme.name}'s tasks to default initial state?`)) {
+      const resetTasks = JSON.parse(JSON.stringify(INITIAL_TASKS));
       setTasksByProfile((prev) => ({
         ...prev,
-        [themeId]: JSON.parse(JSON.stringify(INITIAL_TASKS))
+        [themeId]: resetTasks
       }));
+      syncProfileTasksToCloud(themeId, resetTasks);
       showToast(`${currentTheme.name}'s tasks reset to defaults`);
     }
   };
 
   const handleUnlockAdmin = () => {
     setIsAdminUnlocked(true);
-    showToast('Admin Mode unlocked! Add & delete controls active.');
+    showToast('Admin Mode unlocked! Add, approve & delete controls active.');
   };
 
   const handleLockAdmin = () => {
@@ -252,6 +330,8 @@ export default function App() {
       setAdminToast('');
     }, 3500);
   };
+
+  const isChildMode = deviceMode === 'child';
 
   return (
     <div className={`min-h-screen w-full ${currentTheme.bg} transition-colors duration-500 text-slate-100 flex flex-col items-center relative overflow-x-hidden`}>
@@ -270,15 +350,21 @@ export default function App() {
           onAdminClick={() => setIsPinModalOpen(true)}
           isAdminUnlocked={isAdminUnlocked}
           onLockAdmin={handleLockAdmin}
+          deviceRole={deviceMode}
+          onOpenDeviceSettings={() => setIsDeviceModalOpen(true)}
+          isCloudSynced={isCloudSynced}
+          lockedProfile={lockedProfile}
         />
 
-        {/* Theme Toggle Bar (Jojo / Chocks) */}
-        <div className="mt-4 sm:mt-5">
-          <ThemeToggle 
-            activeTheme={themeId} 
-            onSelectTheme={(id) => setThemeId(id)} 
-          />
-        </div>
+        {/* Theme Toggle Bar (Jojo / Chocks) - only shown if not locked to child profile */}
+        {(!isChildMode || !lockedProfile) && (
+          <div className="mt-4 sm:mt-5">
+            <ThemeToggle 
+              activeTheme={themeId} 
+              onSelectTheme={(id) => setThemeId(id)} 
+            />
+          </div>
+        )}
 
         {/* Duolingo-style Continuous Daily Streak Counter */}
         <StreakProgressBar
@@ -303,9 +389,9 @@ export default function App() {
           }}
         />
 
-        {/* Admin Inline Controls (Revealed dynamically once unlocked) */}
+        {/* Admin Inline Controls (Only available in Admin Mode and once unlocked with PIN) */}
         <AnimatePresence>
-          {isAdminUnlocked && (
+          {!isChildMode && isAdminUnlocked && (
             <AdminControls
               selectedDayName={selectedDayObj.full}
               selectedDayId={selectedDay}
@@ -329,16 +415,63 @@ export default function App() {
             currentTheme={currentTheme}
             dayName={`${selectedDayObj.full}, ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
             onOpenAdmin={() => setIsPinModalOpen(true)}
+            deviceRole={deviceMode}
+            onChildAttemptToggle={() => {
+              showToast('Habit awaiting Admin verification! ⏳');
+            }}
           />
         </div>
+
+        {/* In Child Mode: Discreet Footer Button for Parent to switch back to Admin */}
+        {isChildMode && (
+          <div className="mt-6 mb-2 text-center">
+            <button
+              onClick={() => {
+                setIsPinModalOpen(true);
+              }}
+              className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-white/5 border border-white/5"
+            >
+              <Lock className="w-3 h-3 text-slate-400" />
+              <span>Parent / Admin Settings (PIN: 1234)</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Secret Admin PIN Modal (PIN: 1234) */}
       <AdminPinModal
         isOpen={isPinModalOpen}
         onClose={() => setIsPinModalOpen(false)}
-        onSuccess={handleUnlockAdmin}
+        onSuccess={() => {
+          if (isChildMode) {
+            // If in child mode and PIN entered successfully, open Device Settings modal so parent can switch mode
+            setIsDeviceModalOpen(true);
+            showToast('PIN verified! Configure device role.');
+          } else {
+            handleUnlockAdmin();
+          }
+        }}
         currentTheme={currentTheme}
+      />
+
+      {/* Device Mode & Role Switcher Modal (Parent Phone vs Child Phone) */}
+      <DeviceModeModal
+        isOpen={isDeviceModalOpen}
+        onClose={() => setIsDeviceModalOpen(false)}
+        deviceMode={deviceMode}
+        onSetDeviceMode={(m) => {
+          setDeviceMode(m);
+          if (m === 'admin') {
+            setIsAdminUnlocked(true);
+          } else {
+            setIsAdminUnlocked(false);
+          }
+          showToast(`Device set to ${m === 'admin' ? 'Admin Phone' : 'Child Mode'}!`);
+        }}
+        lockedProfile={lockedProfile}
+        onSetLockedProfile={setLockedProfile}
+        currentTheme={currentTheme}
+        isCloudSynced={isCloudSynced}
       />
 
       {/* Floating Notification Toast */}

@@ -39,7 +39,9 @@ export const TaskList = ({
   isAdminUnlocked, 
   currentTheme,
   dayName,
-  onOpenAdmin
+  onOpenAdmin,
+  deviceRole = 'admin',
+  onChildAttemptToggle
 }) => {
   const [filter, setFilter] = useState('all'); // all | active | completed
 
@@ -101,11 +103,13 @@ export const TaskList = ({
                   : 'No tasks scheduled for this day'}
               </p>
               <p className="text-[11px] text-slate-500 max-w-[200px] mx-auto mb-3">
-                {isAdminUnlocked
+                {deviceRole === 'child'
+                  ? 'All clear! Your parent will allocate upcoming tasks from their phone.'
+                  : isAdminUnlocked
                   ? 'Use the inline form below to add custom daily tasks.'
-                  : 'Unlock Admin Mode with the Sparkle icon to add tasks.'}
+                  : 'Unlock Admin Mode to allocate tasks.'}
               </p>
-              {!isAdminUnlocked && (
+              {!isAdminUnlocked && deviceRole !== 'child' && (
                 <button
                   onClick={onOpenAdmin}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${currentTheme.accentBadge} hover:bg-white/10 transition-colors`}
@@ -138,14 +142,18 @@ export const TaskList = ({
                   <motion.button
                     whileTap={isAdminUnlocked ? { scale: 0.85 } : { scale: 0.96 }}
                     onClick={() => {
-                      if (!isAdminUnlocked) {
+                      if (deviceRole === 'child') {
+                        if (onChildAttemptToggle) onChildAttemptToggle(task);
+                      } else if (!isAdminUnlocked) {
                         onOpenAdmin();
                       } else {
                         onToggleTask(task.id);
                       }
                     }}
                     title={
-                      isAdminUnlocked 
+                      deviceRole === 'child'
+                        ? (task.completed ? "Completed! Verified by Admin" : "Habit will be checked off by Admin")
+                        : isAdminUnlocked 
                         ? (task.completed ? "Mark incomplete (Admin)" : "Check off task (Admin)") 
                         : "Admin login required to check off tasks"
                     }
