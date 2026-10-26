@@ -91,7 +91,7 @@ export const Header = ({
             whileHover={{ scale: 1.15, rotate: 12 }}
             whileTap={{ scale: 0.9 }}
             onClick={onAdminClick}
-            title="Admin Access (PIN: 1234)"
+            title="Admin Access"
             className={`p-3.5 rounded-2xl transition-all duration-300 bg-white/5 hover:bg-white/10 border border-white/10 ${currentTheme.accentClass} hover:shadow-xl flex items-center justify-center`}
           >
             <Sparkles className="w-6 h-6 animate-pulse" />

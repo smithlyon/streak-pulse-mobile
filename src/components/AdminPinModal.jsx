@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Delete, X, KeyRound, Sparkles, Check, AlertCircle } from 'lucide-react';
 
+const ADMIN_PASSWORD = '26260891';
+const PIN_LENGTH = ADMIN_PASSWORD.length; // 8
+
 export const AdminPinModal = ({ isOpen, onClose, onSuccess, currentTheme }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
@@ -34,13 +37,13 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess, currentTheme }) => {
   }, [isOpen, pin]);
 
   const handleDigit = (digit) => {
-    if (pin.length < 4) {
+    if (pin.length < PIN_LENGTH) {
       const nextPin = pin + digit;
       setPin(nextPin);
       setError(false);
 
-      if (nextPin.length === 4) {
-        if (nextPin === '1234') {
+      if (nextPin.length === PIN_LENGTH) {
+        if (nextPin === ADMIN_PASSWORD) {
           setIsSuccess(true);
           setTimeout(() => {
             onSuccess();
@@ -113,22 +116,22 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess, currentTheme }) => {
               <Sparkles className={`w-4 h-4 ${currentTheme.accentClass}`} />
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Enter master PIN to manage daily tasks
+              Enter password to unlock
             </p>
           </div>
 
-          {/* PIN Indicators (4 Dots) */}
+          {/* PIN Indicators (8 Dots) */}
           <motion.div
             animate={error ? { x: [-10, 10, -8, 8, -4, 4, 0] } : {}}
             transition={{ duration: 0.4 }}
-            className="flex items-center justify-center gap-4 mb-4"
+            className="flex items-center justify-center gap-2 sm:gap-2.5 mb-4"
           >
-            {[0, 1, 2, 3].map((index) => {
+            {Array.from({ length: PIN_LENGTH }).map((_, index) => {
               const filled = pin.length > index;
               return (
                 <div
                   key={index}
-                  className={`w-3.5 h-3.5 rounded-full border transition-all duration-200 flex items-center justify-center ${
+                  className={`w-3 h-3 rounded-full border transition-all duration-200 flex items-center justify-center ${
                     error
                       ? 'border-rose-500 bg-rose-500/30'
                       : isSuccess
@@ -146,7 +149,7 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess, currentTheme }) => {
           <div className="h-5 text-center mb-3">
             {error ? (
               <span className="text-[11px] font-medium text-rose-400 flex items-center justify-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Incorrect PIN. Please try again.
+                <AlertCircle className="w-3 h-3" /> Incorrect password. Please try again.
               </span>
             ) : isSuccess ? (
               <span className="text-[11px] font-semibold text-emerald-400 flex items-center justify-center gap-1">

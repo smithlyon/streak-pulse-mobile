@@ -407,7 +407,7 @@ export default function App() {
           />
         </div>
 
-        {/* In Kid Mode: Discreet Footer Button to unlock Admin with PIN (1234) */}
+        {/* In Kid Mode: Discreet Footer Button to unlock Admin */}
         {isChildMode && (
           <div className="mt-6 mb-2 text-center">
             <button
@@ -417,13 +417,13 @@ export default function App() {
               className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-white/5 border border-white/5"
             >
               <Lock className="w-3 h-3 text-slate-400" />
-              <span>Parent Access (PIN: 1234)</span>
+              <span>Parent Access</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Secret Admin PIN Modal (PIN: 1234) */}
+      {/* Secret Admin Password Modal */}
       <AdminPinModal
         isOpen={isPinModalOpen}
         onClose={() => setIsPinModalOpen(false)}

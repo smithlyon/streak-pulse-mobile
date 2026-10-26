@@ -17,10 +17,10 @@ export const DeviceModeModal = ({
   if (!isOpen) return null;
 
   const handleSave = () => {
-    // If switching from child back to admin, require PIN (1234)
+    // If switching from child back to admin, require Admin password
     if (deviceMode === 'child' && selectedMode === 'admin') {
-      if (pinInput !== '1234') {
-        setPinError('Incorrect Admin PIN (1234)');
+      if (pinInput !== '26260891') {
+        setPinError('Incorrect Admin password');
         return;
       }
     }
@@ -142,18 +142,18 @@ export const DeviceModeModal = ({
             >
               <div className="flex items-center gap-1.5 text-xs text-rose-300 font-semibold">
                 <Lock className="w-3.5 h-3.5" />
-                <span>Enter Admin PIN (1234) to unlock Admin:</span>
+                <span>Enter Admin Password to unlock:</span>
               </div>
               <input
                 type="password"
                 inputMode="numeric"
-                maxLength={4}
+                maxLength={8}
                 value={pinInput}
                 onChange={(e) => {
                   setPinInput(e.target.value);
                   setPinError('');
                 }}
-                placeholder="4-digit PIN..."
+                placeholder="Enter password..."
                 className="w-full text-center tracking-widest text-base font-mono py-2 rounded-xl bg-black/60 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
               {pinError && <p className="text-[10px] text-rose-400 font-bold text-center">{pinError}</p>}
