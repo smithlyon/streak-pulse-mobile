@@ -5,14 +5,12 @@ import {
   Sparkles, 
   RotateCcw, 
   Clock, 
-  Tag, 
   Calendar, 
   ChevronLeft, 
   ChevronRight,
   CalendarDays
 } from 'lucide-react';
-import { CATEGORIES } from '../constants/initialData';
-import { EXTENDED_MONTHS, jsDayToDayId } from '../utils/dateUtils';
+import { EXTENDED_MONTHS } from '../utils/dateUtils';
 
 export const AdminControls = ({ 
   selectedDayName, 
@@ -25,7 +23,6 @@ export const AdminControls = ({
   getTasksForDate
 }) => {
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('work');
   const [time, setTime] = useState('09:00 AM');
   const [showCalendar, setShowCalendar] = useState(false);
 
@@ -95,7 +92,6 @@ export const AdminControls = ({
 
     onAddTask({
       title: title.trim(),
-      category,
       time: time.trim() || 'Flexible',
       targetDate: selectedDate,
       dateStr: shortDateLabel
@@ -127,7 +123,7 @@ export const AdminControls = ({
                 Admin Task Scheduler
               </span>
               <span className="text-[10px] text-slate-400 font-medium">
-                Log habits & schedule (Oct '26 – Apr '27)
+                Allocate habits & schedule (Oct '26 – Apr '27)
               </span>
             </div>
           </div>
@@ -306,7 +302,7 @@ export const AdminControls = ({
           )}
         </AnimatePresence>
 
-        {/* Task Creator Form */}
+        {/* Task Creator Form (Simplified: No Category Buttons) */}
         <form onSubmit={handleSubmit} className="space-y-2.5">
           {/* Active Target Date Pill Banner */}
           <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
@@ -338,30 +334,6 @@ export const AdminControls = ({
             />
           </div>
 
-          {/* Category Picker */}
-          <div>
-            <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-1.5 font-medium">
-              <Tag className="w-3 h-3 text-slate-500" />
-              <span>Category</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setCategory(cat.id)}
-                  className={`px-2.5 py-1 rounded-xl text-[10px] font-semibold transition-all ${
-                    category === cat.id
-                      ? `${currentTheme.accentBg} text-slate-950 font-bold shadow-xs`
-                      : 'bg-white/5 text-slate-400 hover:text-white border border-white/5'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Time Preset / Input & Submit Button */}
           <div className="flex items-center gap-2 pt-1">
             <div className="relative flex-1">
@@ -372,7 +344,7 @@ export const AdminControls = ({
                 type="text"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                placeholder="e.g. 08:30 AM"
+                placeholder="e.g. 08:30 AM or Flexible"
                 className="w-full pl-8 pr-2 py-2 rounded-xl bg-black/40 border border-white/10 text-[11px] font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-white/30"
               />
             </div>

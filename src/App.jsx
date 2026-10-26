@@ -12,25 +12,19 @@ import { THEMES } from './constants/themeConfig';
 import { DAYS_OF_WEEK, INITIAL_TASKS } from './constants/initialData';
 import { getWeekDaysForDate, jsDayToDayId, formatDateKey, getMondayOfWeek } from './utils/dateUtils';
 import { subscribeProfileTasks, syncProfileTasksToCloud } from './services/syncService';
-import { ShieldCheck, Lock, Smartphone } from 'lucide-react';
+import { ShieldCheck, Lock } from 'lucide-react';
 
 const STORAGE_KEY_THEME = 'daily_pulse_theme_v1';
 const STORAGE_KEY_DEVICE_MODE = 'daily_pulse_device_mode_v1';
-const STORAGE_KEY_LOCKED_PROFILE = 'daily_pulse_locked_profile_v1';
 const getProfileStorageKey = (profile) => `daily_pulse_tasks_${profile}_v2`;
 
 export default function App() {
-  // Device Role: 'admin' (parent phone) or 'child' (child phone)
+  // Device Role: 'admin' (parent phone) or 'child' (kid phone, locked)
   const [deviceMode, setDeviceMode] = useState(() => {
     return localStorage.getItem(STORAGE_KEY_DEVICE_MODE) || 'admin';
   });
 
-  // Locked Profile when in child mode (null | 'jojo' | 'chocks')
-  const [lockedProfile, setLockedProfile] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY_LOCKED_PROFILE) || null;
-  });
-
-  // Theme state: 'jojo' (sky blue dark) or 'chocks' (rich purple dark)
+  // Theme / Profile state: 'jojo' (sky blue) or 'chocks' (rich purple)
   const [themeId, setThemeId] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_THEME);
     if (saved) return saved;
@@ -89,25 +83,10 @@ export default function App() {
   const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [adminToast, setAdminToast] = useState('');
 
-  // Lock to specific profile if child mode has a locked assignment
-  useEffect(() => {
-    if (deviceMode === 'child' && lockedProfile && (lockedProfile === 'jojo' || lockedProfile === 'chocks')) {
-      setThemeId(lockedProfile);
-    }
-  }, [deviceMode, lockedProfile]);
-
-  // Persist device role and locked profile to localStorage
+  // Persist device role to localStorage (remains permanently locked in Kid Mode across reloads)
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_DEVICE_MODE, deviceMode);
   }, [deviceMode]);
-
-  useEffect(() => {
-    if (lockedProfile) {
-      localStorage.setItem(STORAGE_KEY_LOCKED_PROFILE, lockedProfile);
-    } else {
-      localStorage.removeItem(STORAGE_KEY_LOCKED_PROFILE);
-    }
-  }, [lockedProfile]);
 
   // Persist theme
   useEffect(() => {
@@ -267,7 +246,7 @@ export default function App() {
     showToast('Task removed');
   };
 
-  const handleAddTask = ({ title, category, time, targetDate, dateStr }) => {
+  const handleAddTask = ({ title, time, targetDate, dateStr }) => {
     const taskDate = targetDate ? new Date(targetDate) : selectedDate;
     const dateKey = formatDateKey(taskDate);
     const existingTasks = getTasksForDate(taskDate);
@@ -280,7 +259,6 @@ export default function App() {
     const newTask = {
       id: `${dateKey}-${Date.now()}`,
       title,
-      category,
       time,
       completed: false,
       dateKey,
@@ -351,20 +329,27 @@ export default function App() {
           isAdminUnlocked={isAdminUnlocked}
           onLockAdmin={handleLockAdmin}
           deviceRole={deviceMode}
-          onOpenDeviceSettings={() => setIsDeviceModalOpen(true)}
+          onOpenDeviceSettings={() => {
+            if (isChildMode) {
+              // On Kid Phone: Require Admin PIN to unlock settings
+              setIsPinModalOpen(true);
+            } else {
+              setIsDeviceModalOpen(true);
+            }
+          }}
           isCloudSynced={isCloudSynced}
-          lockedProfile={lockedProfile}
         />
 
-        {/* Theme Toggle Bar (Jojo / Chocks) - only shown if not locked to child profile */}
-        {(!isChildMode || !lockedProfile) && (
-          <div className="mt-4 sm:mt-5">
-            <ThemeToggle 
-              activeTheme={themeId} 
-              onSelectTheme={(id) => setThemeId(id)} 
-            />
-          </div>
-        )}
+        {/* Profile Switcher (Jojo / Chocks) - Simple single button for BOTH Kid phone & Admin phone */}
+        <div className="mt-3 sm:mt-4">
+          <ThemeToggle 
+            activeTheme={themeId} 
+            onSelectTheme={(id) => {
+              setThemeId(id);
+              showToast(`Viewing ${id === 'jojo' ? 'Jojo' : 'Chocks'}`);
+            }} 
+          />
+        </div>
 
         {/* Duolingo-style Continuous Daily Streak Counter */}
         <StreakProgressBar
@@ -377,7 +362,7 @@ export default function App() {
           selectedDay={selectedDay}
         />
 
-        {/* Interactive Day Selector Pills (Mon - Sun) & Months (Oct - Apr) */}
+        {/* Interactive Day Selector Pills (Mon - Sun) & Months (Oct - Apr) with Current Week Highlight */}
         <DaySelector
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
@@ -405,7 +390,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Dynamic Task List with check-off, strikethrough, and smooth layout animations */}
+        {/* Dynamic Task List (Clean, No Category clutter) */}
         <div className="flex-1">
           <TaskList
             tasks={activeDayTasks}
@@ -422,7 +407,7 @@ export default function App() {
           />
         </div>
 
-        {/* In Child Mode: Discreet Footer Button for Parent to switch back to Admin */}
+        {/* In Kid Mode: Discreet Footer Button to unlock Admin with PIN (1234) */}
         {isChildMode && (
           <div className="mt-6 mb-2 text-center">
             <button
@@ -432,7 +417,7 @@ export default function App() {
               className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-white/5 border border-white/5"
             >
               <Lock className="w-3 h-3 text-slate-400" />
-              <span>Parent / Admin Settings (PIN: 1234)</span>
+              <span>Parent Access (PIN: 1234)</span>
             </button>
           </div>
         )}
@@ -444,9 +429,9 @@ export default function App() {
         onClose={() => setIsPinModalOpen(false)}
         onSuccess={() => {
           if (isChildMode) {
-            // If in child mode and PIN entered successfully, open Device Settings modal so parent can switch mode
+            // If in kid mode and PIN verified, open Device Mode Modal to unlock Admin
             setIsDeviceModalOpen(true);
-            showToast('PIN verified! Configure device role.');
+            showToast('PIN verified! You can switch back to Admin Phone.');
           } else {
             handleUnlockAdmin();
           }
@@ -454,7 +439,7 @@ export default function App() {
         currentTheme={currentTheme}
       />
 
-      {/* Device Mode & Role Switcher Modal (Parent Phone vs Child Phone) */}
+      {/* Device Mode Switcher Modal (Kid Mode Lock vs Admin Control) */}
       <DeviceModeModal
         isOpen={isDeviceModalOpen}
         onClose={() => setIsDeviceModalOpen(false)}
@@ -466,10 +451,8 @@ export default function App() {
           } else {
             setIsAdminUnlocked(false);
           }
-          showToast(`Device set to ${m === 'admin' ? 'Admin Phone' : 'Child Mode'}!`);
+          showToast(`Device set to ${m === 'admin' ? 'Admin Phone' : 'Kid Mode (Locked)'}!`);
         }}
-        lockedProfile={lockedProfile}
-        onSetLockedProfile={setLockedProfile}
         currentTheme={currentTheme}
         isCloudSynced={isCloudSynced}
       />

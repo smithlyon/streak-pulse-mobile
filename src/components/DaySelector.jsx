@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Calendar } from 'lucide-react';
+import { Check, Calendar, Sparkles, ArrowRightLeft } from 'lucide-react';
 import { EXTENDED_MONTHS, getMondayOfWeek, formatWeekRange, getWeekDaysForDate } from '../utils/dateUtils';
 
 export const DaySelector = ({ 
   selectedDate = new Date(2026, 9, 20), 
   onSelectDate,
-  onSelectDay,
   tasksByDay = {}, 
   currentTheme,
   weekDays = [],
@@ -18,6 +17,26 @@ export const DaySelector = ({
   const monday = getMondayOfWeek(safeDate);
   const weekRangeText = formatWeekRange(monday);
   const days = weekDays && weekDays.length === 7 ? weekDays : getWeekDaysForDate(safeDate);
+
+  // Determine current real-world week (or default launch week Oct 2026 if outside range)
+  const getTodayDate = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if ((y === 2026 && m >= 9) || (y === 2027 && m <= 3)) {
+      return now;
+    }
+    return new Date(2026, 9, 20);
+  };
+
+  const todayDate = getTodayDate();
+  const currentWeekMonday = getMondayOfWeek(todayDate);
+  const isCurrentWeek =
+    currentWeekMonday.getFullYear() === monday.getFullYear() &&
+    currentWeekMonday.getMonth() === monday.getMonth() &&
+    currentWeekMonday.getDate() === monday.getDate();
+
+  const isJojo = currentTheme.id === 'jojo';
 
   return (
     <div className="px-4 py-2">
@@ -45,19 +64,53 @@ export const DaySelector = ({
         })}
       </div>
 
-      {/* Week Header info with exact synced dates */}
+      {/* Week Header info with Current Week Highlight & Shortcut */}
       <div className="flex items-center justify-between mb-2 px-1">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>Week of</span>
+        <div className="flex items-center gap-1.5">
+          {isCurrentWeek ? (
+            <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+              isJojo 
+                ? 'bg-sky-500/20 text-sky-300 border border-sky-400/40 shadow-[0_0_10px_rgba(56,189,248,0.35)]' 
+                : 'bg-purple-500/20 text-purple-300 border border-purple-400/40 shadow-[0_0_10px_rgba(192,132,252,0.35)]'
+            }`}>
+              <Sparkles className="w-2.5 h-2.5 animate-pulse" />
+              <span>Current Week</span>
+            </span>
+          ) : (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>Week of</span>
+            </div>
+          )}
+          <span className="text-[11px] text-slate-300 font-mono font-semibold">
+            {weekRangeText}
+          </span>
         </div>
-        <span className="text-[11px] text-slate-300 font-mono font-semibold">
-          {weekRangeText}
-        </span>
+
+        {/* Shortcut button: Jump back to Current Week if browsing future/past months */}
+        {!isCurrentWeek && (
+          <button
+            type="button"
+            onClick={() => onSelectDate && onSelectDate(todayDate)}
+            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all ${
+              isJojo
+                ? 'bg-sky-500/10 text-sky-300 border-sky-500/30 hover:bg-sky-500/20 shadow-xs'
+                : 'bg-purple-500/10 text-purple-300 border-purple-500/30 hover:bg-purple-500/20 shadow-xs'
+            }`}
+          >
+            <span>↩ This Week</span>
+          </button>
+        )}
       </div>
 
       {/* 7 Days Pills Container (Mon - Sun of the active week) */}
-      <div className="grid grid-cols-7 gap-1.5 p-1 rounded-2xl bg-black/30 border border-white/5">
+      <div className={`grid grid-cols-7 gap-1.5 p-1 rounded-2xl bg-black/30 border transition-all duration-300 ${
+        isCurrentWeek
+          ? isJojo
+            ? 'border-sky-500/40 ring-1 ring-sky-500/30 shadow-[0_0_16px_rgba(56,189,248,0.12)]'
+            : 'border-purple-500/40 ring-1 ring-purple-500/30 shadow-[0_0_16px_rgba(192,132,252,0.12)]'
+          : 'border-white/5'
+      }`}>
         {days.map((day) => {
           const isSelected = 
             day.dateObj.getFullYear() === safeDate.getFullYear() &&

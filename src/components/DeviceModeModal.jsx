@@ -7,13 +7,10 @@ export const DeviceModeModal = ({
   onClose,
   deviceMode, // 'admin' | 'child'
   onSetDeviceMode,
-  lockedProfile, // null | 'jojo' | 'chocks'
-  onSetLockedProfile,
   currentTheme,
   isCloudSynced
 }) => {
   const [selectedMode, setSelectedMode] = useState(deviceMode);
-  const [selectedChildProfile, setSelectedChildProfile] = useState(lockedProfile || 'jojo');
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -23,22 +20,15 @@ export const DeviceModeModal = ({
     // If switching from child back to admin, require PIN (1234)
     if (deviceMode === 'child' && selectedMode === 'admin') {
       if (pinInput !== '1234') {
-        setPinError('Incorrect Admin PIN');
+        setPinError('Incorrect Admin PIN (1234)');
         return;
       }
     }
 
     onSetDeviceMode(selectedMode);
-    if (selectedMode === 'child') {
-      onSetLockedProfile(selectedChildProfile);
-    } else {
-      onSetLockedProfile(null);
-    }
     setPinError('');
     onClose();
   };
-
-  const isJojo = currentTheme.id === 'jojo';
 
   return (
     <AnimatePresence>
@@ -66,8 +56,8 @@ export const DeviceModeModal = ({
                 <Smartphone className="w-4 h-4" />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-white">Device Role Settings</h3>
-                <p className="text-[10px] text-slate-400">Configure Parent vs Child Phone</p>
+                <h3 className="text-sm font-bold text-white">Device Mode</h3>
+                <p className="text-[10px] text-slate-400">Lock Kid Mode vs Admin Control</p>
               </div>
             </div>
             <button
@@ -88,14 +78,14 @@ export const DeviceModeModal = ({
               isCloudSynced ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isCloudSynced ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              {isCloudSynced ? 'Active' : 'Connecting'}
+              {isCloudSynced ? 'Live' : 'Connecting'}
             </span>
           </div>
 
           {/* Role Choice */}
           <div className="space-y-2.5 mb-4">
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block px-0.5">
-              Select Mode for this Phone
+              Select Phone Role
             </label>
 
             {/* Admin Option */}
@@ -111,11 +101,11 @@ export const DeviceModeModal = ({
               <ShieldCheck className={`w-5 h-5 mt-0.5 flex-shrink-0 ${selectedMode === 'admin' ? 'text-slate-950' : 'text-sky-400'}`} />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold">Parent / Admin Phone</span>
+                  <span className="text-xs font-bold">Admin Phone (Parent)</span>
                   {selectedMode === 'admin' && <Check className="w-3.5 h-3.5" />}
                 </div>
                 <p className={`text-[10px] mt-0.5 ${selectedMode === 'admin' ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>
-                  Full calendar scheduler, allocate tasks in advance, verify & approve streak completions.
+                  Full control: Allocate tasks ahead of time, calendar scheduler, approve & check off tasks.
                 </p>
               </div>
             </button>
@@ -133,54 +123,17 @@ export const DeviceModeModal = ({
               <Sparkles className={`w-5 h-5 mt-0.5 flex-shrink-0 ${selectedMode === 'child' ? 'text-slate-950' : 'text-purple-400'}`} />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold">Child Phone (Kid Mode)</span>
+                  <span className="text-xs font-bold">Kid Mode (Locked In)</span>
                   {selectedMode === 'child' && <Check className="w-3.5 h-3.5" />}
                 </div>
                 <p className={`text-[10px] mt-0.5 ${selectedMode === 'child' ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>
-                  Gamified flame streaks and checklists. All admin tools and calendar controls are stripped out.
+                  Locked to daily habits and flame streaks. All admin tools and calendar controls are stripped away until Admin PIN is entered.
                 </p>
               </div>
             </button>
           </div>
 
-          {/* Child Profile Specific Lock (If Child Mode is selected) */}
-          {selectedMode === 'child' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mb-4 p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2"
-            >
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Assign this Phone to:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedChildProfile('jojo')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
-                    selectedChildProfile === 'jojo'
-                      ? 'bg-sky-500 text-slate-950 border-sky-400 shadow-md font-black'
-                      : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  ⚡ Jojo's Phone
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedChildProfile('chocks')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
-                    selectedChildProfile === 'chocks'
-                      ? 'bg-purple-500 text-white border-purple-400 shadow-md font-black'
-                      : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  ✨ Chocks's Phone
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Security PIN requirement when reverting from Child to Admin */}
+          {/* Security PIN requirement when switching from Child to Admin */}
           {deviceMode === 'child' && selectedMode === 'admin' && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -189,7 +142,7 @@ export const DeviceModeModal = ({
             >
               <div className="flex items-center gap-1.5 text-xs text-rose-300 font-semibold">
                 <Lock className="w-3.5 h-3.5" />
-                <span>Enter Admin PIN to switch to Admin:</span>
+                <span>Enter Admin PIN (1234) to unlock Admin:</span>
               </div>
               <input
                 type="password"

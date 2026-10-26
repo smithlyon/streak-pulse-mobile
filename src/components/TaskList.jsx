@@ -3,34 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Check, 
   Trash2, 
-  Flame, 
-  Briefcase, 
-  BookOpen, 
-  Heart, 
-  Brain, 
   Clock, 
   Sparkles,
   ListTodo,
-  CheckCircle2,
   Lock,
   Calendar
 } from 'lucide-react';
-
-const categoryIcons = {
-  fitness: Flame,
-  work: Briefcase,
-  learning: BookOpen,
-  health: Heart,
-  mind: Brain
-};
-
-const categoryLabels = {
-  fitness: { label: 'Fitness', bg: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
-  work: { label: 'Focus', bg: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-  learning: { label: 'Learning', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-  health: { label: 'Health', bg: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
-  mind: { label: 'Mindset', bg: 'bg-purple-500/10 text-purple-400 border-purple-500/20' }
-};
 
 export const TaskList = ({ 
   tasks, 
@@ -64,7 +42,7 @@ export const TaskList = ({
           </h2>
         </div>
 
-        {/* Filter chips */}
+        {/* Filter chips (All / Active / Completed) */}
         <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-xl border border-white/5 text-[10px]">
           {['all', 'active', 'completed'].map((f) => (
             <button
@@ -121,9 +99,6 @@ export const TaskList = ({
             </motion.div>
           ) : (
             filteredTasks.map((task) => {
-              const IconComponent = categoryIcons[task.category] || Flame;
-              const catConfig = categoryLabels[task.category] || categoryLabels.work;
-
               return (
                 <motion.div
                   key={task.id}
@@ -178,14 +153,16 @@ export const TaskList = ({
                     ) : null}
                   </motion.button>
 
-                  {/* Task Content: Title & Metas */}
+                  {/* Task Content: Title & Time / Date Metas (Clean, No Category) */}
                   <div 
                     className={`flex-1 min-w-0 select-none ${
-                      isAdminUnlocked ? 'cursor-pointer' : 'cursor-default'
+                      isAdminUnlocked ? 'cursor-pointer' : ''
                     }`}
                     onClick={() => {
                       if (isAdminUnlocked) {
                         onToggleTask(task.id);
+                      } else if (deviceRole === 'child') {
+                        if (onChildAttemptToggle) onChildAttemptToggle(task);
                       } else {
                         onOpenAdmin();
                       }
@@ -202,12 +179,6 @@ export const TaskList = ({
                     </p>
 
                     <div className="flex items-center gap-2 mt-1">
-                      {/* Category Badge */}
-                      <span className={`inline-flex items-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-full border ${catConfig.bg}`}>
-                        <IconComponent className="w-2.5 h-2.5" />
-                        <span>{catConfig.label}</span>
-                      </span>
-
                       {/* Time Pill */}
                       {task.time && (
                         <span className="inline-flex items-center gap-1 text-[9px] text-slate-400 font-mono">
